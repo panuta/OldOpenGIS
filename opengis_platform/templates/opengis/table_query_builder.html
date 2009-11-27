@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load opengis_tags %}
+
+{% block head_content %}
+<link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}/css/styles.query-builder.css">
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$("#id_starter_table").change(function() {
+		var table_ids = $(this).find("option:selected").val();
+		
+		if(table_ids != "") {
+			$.getJSON("{% url opengis_ajax_get_tables_for_query_builder %}?table_ids=" + table_ids, function(data) {
+				$(".starter_table").html(build_table(data.tables[0]));
+
+				$(".starter_table .link_show_foreign").click(function() {
+					alert("test");
+					return false;
+				});
+				
+				$(".starter_table .link_manage_filter").click(function() {
+					$("#id_add_filter_panel").show().css({'left':'100px','top':'100px'});
+					return false;
+				});
+
+			});
+		}
+	});
+	
+	$("#button_save").click(function() {
+		save_query();
+		return false;
+	});
+});
+
+function build_table(data) {
+	var html = '<tr><td colspan="4">' + data.table_name + '</td></tr>';
+	
+	for(var i=0; i<data.columns.length; i++) {
+		html += '<tr><td rel="' + data.columns[i].physical_name + '"><input type="checkbox" class="display_button"/></td><td><a href="#" class="link_manage_filter">Filter</a></td><td><a href="#">Aggregate</a></td><td>' + data.columns[i].name + '</td></tr>';
+	}
+	
+	html += '<tr><td colspan="4"><a href="#" class="link_show_foreign">Show foreign table</a></td></tr>';
+	
+	return '<table border="1">' + html + '</table>';
+}
+
+function initialize_add_filter_popup() {
+	$("#id_add_filter_popup").html('<select name="function"><option value="equal">Equal</option><option value="notequal">Not Equal</option></select><input type="text" name="value"/><button type="button" class="submit-button">Add</button><button type="button" class="cancel-button">Cancel</button>');
+	
+	$("#id_add_filter_popup .submit-button").click(function() {
+		
+	});
+	
+	$("#id_add_filter_popup .cancel-button").click(function() {
+		
+	});
+	
+
+}
+
+function save_query() {
+	var query_name = $("#id_query_name").val();
+	var starter_table = $("#id_starter_table option:selected").val();
+	
+	var display_columns = new Array();
+	$(".starter_table .display_button:checked").each(function() {
+		display_columns[display_columns.length] = $(this).parent().attr("rel");
+	});
+	
+	$.post("{% url opengis_ajax_save_building_query %}", {'query_name':query_name, 'starter_table':starter_table, 'display_columns':display_columns}, function(data) {
+		alert("saved");
+		
+	}, "json");
+}
+</script>
+{% endblock %}
+
+{% block body_content %}
+<h2><a href="{% url opengis_list_my_table %}">Tables</a> - Query Builder</h2>
+
+<form>
+
+<div>
+	<label for="id_query_name">Query Name:</label> <input type="text" name="query_name" id="id_query_name"/>
+	<label for="id_starter_table">Starter Table:</label> <select id="id_starter_table" name="starter_table"><option></option>{% generate_user_table_list user_tables %}</select>
+	<button type="submit" id="button_save">Save Query</button>
+</div>
+
+<div class="tables_pane">
+	<div class="starter_table">
+		
+	</div>
+</div>
+
+<div id="id_add_filter_popup" style="position:absolute;display:none;">
+	<select name="function">
+		<option value="equal">Equal</option>
+		<option value="notequal">Not Equal</option>
+	</select>
+	<input type="text" name="value"/>
+	<button type="button" class="submit-button">Add</button>
+	<button type="button" class="cancel-button">Cancel</button>
+</div>
+<div id="id_manage_filter_panel"></div>
+
+<div></div>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block body_content %}
+	<h2>Table List</h2>
+	<div><a href="{% url opengis_create_my_table %}">Create a new table</a> | <a href="{% url opengis_build_my_query %}">Query Builder</a></div>
+	<ul>
+	{% for user_table in user_tables %}
+		<li><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a></li>
+	{% endfor %}
+	</ul>
+{% endblock %}

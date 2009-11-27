@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block body_content %}
+<h2>Registration Form</h2>
+<form action="." method="post">
+	<div><label for="id_username">Username: </label>{{form.username}}</div>
+	<div><label for="id_email">Email: </label>{{form.email}}</div>
+	<div><label for="id_password1">Password: </label>{{form.password1}}</div>
+	<div><label for="id_password2">Confirm Password: </label>{{form.password2}}</div>
+	<div><button type="submit">Submit</button></div>
+</form>
+{% endblock %}

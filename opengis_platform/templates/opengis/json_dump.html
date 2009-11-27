@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block body_content %}
+{% for row in result %}
+	{{row.province_name}}
+{% endfor %}
+
+{% endblock %}

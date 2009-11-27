@@ -1,0 +1,1 @@
+Click this link to activate [{{site}}/accounts/activate/{{activation_key}}/]

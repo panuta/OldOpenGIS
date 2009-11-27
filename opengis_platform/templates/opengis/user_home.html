@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block body_content %}
+My
+<ul>
+	<li><a href="{% url opengis_list_my_table %}">Tables</a></li>
+	<li><a href="{% url opengis_list_my_query %}">Queries</a></li>
+</ul>
+
+{% endblock %}

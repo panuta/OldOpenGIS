@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load opengis_tags %}
+
+{% block head_content %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$("select[name='column_type']").change(function() {
+		var data_type = $(this).find("option:selected").val();
+		
+		if(data_type == "mine") { // Foreign Table
+			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_user_table_list user_tables %}</select>');
+		
+		} else 	if(data_type == "predefined") { // Predefined Table
+			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_predefined_table_list %}</select>');
+		
+		} else {
+			$(this).parent().find(".additional_input").html('');
+		}
+	});
+});
+
+function dosubmit() {
+	$("form .column_input").each(function() {
+		var data_type = $(this).find("select[name='column_type'] option:selected").val();
+		
+		if(data_type != "") {
+			var column_text = $(this).find("input[name='column_name']").val() + ":" + data_type;
+
+			if(data_type == "mine") {
+				var related_table = $(this).find("select[name='related'] option:selected").val();
+				if(related_table == "") return;
+				column_text += ":related--" + related_table;
+				
+			} else if(data_type == "predefined") {
+				var related_table = $(this).find("select[name='related'] option:selected").val();
+				if(related_table == "") return;
+				column_text += ":related--" + related_table;
+			}
+
+			$("form").append('<input type="hidden" name="columns" value="' + column_text + '"/>');
+		}
+	});
+	
+	return true;
+}
+</script>
+
+{% endblock %}
+
+{% block body_content %}
+	<h2><a href="{% url opengis_list_my_table %}">Tables</a> - Create Table</h2>
+	<form action="." method="post">
+		<div><label>Table name:</label><input type="text" name="table_name" id="id_table_name" /></div>
+		<div class="column_input"><label>Column 1:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
+		<div class="column_input"><label>Column 2:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
+		<div class="column_input"><label>Column 3:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
+		<div class="column_input"><label>Column 4:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
+		<div class="column_input"><label>Column 5:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
+		<div>
+			<button type="submit" onclick="return dosubmit();">Submit</button>
+		</div>
+	</form>
+{% endblock %}

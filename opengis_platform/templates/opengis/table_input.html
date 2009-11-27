@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block body_content %}
+	<h2><a href="{% url opengis_list_my_table %}">Tables</a> - <a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a> - Input data</h2>
+	<form action="." method="post">
+		{% for column in user_table.columns %}
+			<div><label for="id_{{column.column_name}}">{{column.column_name}}</label> <input type="text" id="id_{{column.column_name}}" name="{{column.column_name}}"/></div>
+		{% endfor %}
+		<div><button type="submit">Submit</button></div>
+	</form>
+{% endblock %}

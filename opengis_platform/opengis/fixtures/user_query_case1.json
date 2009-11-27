@@ -1,0 +1,53 @@
+[{
+	"model": "opengis.userquery",
+	"pk": 1,
+	"fields": {
+		"is_distinct": false, 
+		"account": 1, 
+		"query_name": "user_query_case1", 
+		"starter_table": "thailand_province", 
+		"result_limit": 1
+		}
+	},
+{
+	"model": "opengis.userquerydisplaycolumn",
+	"pk": 101,
+	"fields": {
+		"query": 1,
+		"column_hierarchy": "",
+		"column_name": "name",
+		"is_aggregate": false,
+		"is_virtual": false,
+		"display_name": "Name in English"
+		}
+	},
+{
+	"model": "opengis.userquerydisplaycolumn",
+	"pk": 102,
+	"fields": {
+		"query": 1,
+		"column_hierarchy": "",
+		"column_name": "id",
+		"is_aggregate": false,
+		"is_virtual": false,
+		"display_name": "ID"
+		}
+	},
+{
+	"model": "opengis.userqueryfilter",
+	"pk": 101,
+	"fields": {
+		"query": 1,
+		"column_hierarchy": "",
+		"column_name": "id",
+		"filter_function": "equal",
+		"filter_value": "1",
+		"is_variable": false
+		}
+	}
+]
+
+
+
+
+

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load opengis_tags %}
+
+{% block body_content %}
+	<h2><a href="{% url opengis_list_my_table %}">Tables</a> - {{user_table.table_name}}</h2>
+	<div><a href="{% url opengis_input_my_table user_table.table_name %}">Add data</a></div>
+	<div class="data_table">
+		<table border="1">
+			{% for data_row in data %}
+				<tr>
+				{% for column in user_table.columns %}
+					<td>{% print_value data_row column.physical_column_name %}</td>
+				{% endfor %}
+				</tr>
+			{% endfor %}
+		</table>
+	</div>
+{% endblock %}
