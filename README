@@ -1,0 +1,5 @@
+INSTALL
+1. Install PostGIS and its dependencies.
+2. Create postgis database, add database user
+3. Modify settings.py
+4. Run syncdb and runserver
