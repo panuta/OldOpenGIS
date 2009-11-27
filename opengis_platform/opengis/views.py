@@ -60,7 +60,7 @@ def create_user_table(request):
 			column = {'name':splited[0]}
 			
 			for column_option in splited[2:]:
-				(option_name, splitter, option_value) = column_option.partition(opengis.CREATE_TABLE_COLUMN_OPTION_SPLITTER)
+				(option_name, splitter, option_value) = column_option.partition(constants.CREATE_TABLE_COLUMN_OPTION_SPLITTER)
 				if option_value.isdigit(): option_value = int(option_value)
 				column[option_name] = option_value
 			
@@ -489,27 +489,26 @@ def ajax_save_building_query(request):
 	else:
 		return redirect(reverse('opengis_build_my_query'))
 
-"""
 def simplify_shape(request):
 	for province in ThailandProvince.objects.all():
 		
 		from django.contrib.gis.geos import GEOSGeometry
 		
 		try:
-			province.region = GEOSGeometry(province.region.simplify(0.03, True).wkt)
+			province.region_simple = GEOSGeometry(province.region.simplify(0.03, True).wkt)
 			province.save()
 		except:
-			province.region = GEOSGeometry(province.region.simplify(0.03, True).wkt.replace('POLYGON ', 'MULTIPOLYGON (') + ')')
+			province.region_simple = GEOSGeometry(province.region.simplify(0.03, True).wkt.replace('POLYGON ', 'MULTIPOLYGON (') + ')')
 			province.save()
-"""
+	
+	return HttpResponse('')
 
-"""
 def load_shape(request):
 	from django.contrib.gis.utils.layermapping import LayerMapping
 	from django.contrib.gis.gdal import DataSource
 	from opengis.models import ThailandProvince
 
-	ds = DataSource('/Users/apple/Projects/OpenGIS/Platform/opengis_platform/files/shape/thailand_province/changwat_region_Project.shp')
+	ds = DataSource('/Users/apple/Projects/OpenGIS/OpenGIS/opengis_platform/files/shape/thailand_province/changwat_region_Project.shp')
 
 	mapping = {
 	    'name_th' : 'TNAME',
@@ -519,7 +518,8 @@ def load_shape(request):
 
 	lm = LayerMapping(ThailandProvince, ds, mapping, encoding='tis-620')
 	lm.save(verbose=True)
-"""
+	
+	return HttpResponse('')
 
 def get_user_table_json(request, table_name):
 	account = Account.objects.get(user=request.user)

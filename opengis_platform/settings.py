@@ -11,7 +11,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'postgresql_psycopg2'
-DATABASE_NAME = 'opengis_platform'
+DATABASE_NAME = 'opengis2'
 DATABASE_USER = 'panuta'
 DATABASE_PASSWORD = 'panuta'
 DATABASE_HOST = ''

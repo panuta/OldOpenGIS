@@ -24,8 +24,9 @@ class ThailandProvince(models.Model):
 	name = models.CharField(max_length=256)
 	name_th = models.CharField(max_length=256)
 	region = models.MultiPolygonField(null=True)
+	region_simple = models.MultiPolygonField(null=True)
 	location = models.PointField(null=True)
-	in_region = models.ForeignKey(ThailandRegion)
+	in_region = models.ForeignKey(ThailandRegion, null=True)
 	objects = models.GeoManager()
 	
 	def __unicode__(self):
@@ -67,7 +68,6 @@ class UserQueryDisplayColumn(models.Model):
 	column_hierarchy = models.CharField(max_length=512, null=True, blank=True)
 	column_name = models.CharField(max_length=512)
 	is_aggregate = models.BooleanField(default=False)
-	is_virtual = models.BooleanField(default=False)
 	display_name = models.CharField(max_length=512, null=True, blank=True)
 
 class UserQueryFilter(models.Model):

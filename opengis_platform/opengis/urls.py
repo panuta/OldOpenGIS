@@ -2,8 +2,8 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('opengis.views',
 
-	# url(r'^load_shape/$', 'load_shape'),
-	# url(r'^simplify_shape/$', 'simplify_shape'),
+	url(r'^load_shape/$', 'load_shape'),
+	url(r'^simplify_shape/$', 'simplify_shape'),
 	
 	url(r'^$', 'view_homepage', name="opengis_view_homepage"),
 	

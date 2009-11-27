@@ -1,5 +1,33 @@
-INSTALL
+INSTALLATION
 1. Install PostGIS and its dependencies.
-2. Create postgis database, add database user
-3. Modify settings.py
-4. Run syncdb and runserver
+2. Create postgis database and add a database user
+3. Modify settings.py (database settings, url settings)
+4. Run syncdb
+5. Load fixtures to database (for predefined table)
+
+##### How to install PostGIS and dependencies #####
+See http://www.tokumine.com/2009/06/01/install-django-geodjango-postgresql-postgis-on-osx-leopard/
+
+##### How to create PostGIS database template #####
+
+$ createdb -E UTF8 -O postgres -U postgres template_postgis
+
+$ createlang plpgsql -d template_postgis -U postgres
+
+$ sudo su - postgres -c '/usr/local/pgsql/bin/psql -d template_postgis -f /usr/local/pgsql/share/contrib/postgis.sql'
+
+$ sudo su - postgres -c '/usr/local/pgsql/bin/psql -d template_postgis -f /usr/local/pgsql/share/contrib/spatial_ref_sys.sql'
+
+$ ldconfig
+
+Then restart postgresql
+
+##### How to create a new database from template #####
+
+$ createdb -T template_postgis -U postgres newdatabase
+
+Where 'template_postgis' is template name (basically is another database), and 'newdatabase' is a new database name
+
+##### How to load fixtures into database #####
+$ python manage.py loaddata ./opengis/fixtures/thailand_region.json
+$ python manage.py loaddata ./opengis/fixtures/thailand_province.json
