@@ -10,8 +10,8 @@ $(document).ready(function() {
 		if(data_type == "mine") { // Foreign Table
 			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_user_table_list user_tables %}</select>');
 		
-		} else 	if(data_type == "predefined") { // Predefined Table
-			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_predefined_table_list %}</select>');
+		} else 	if(data_type == "builtin") { // Built-in Table
+			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_built_in_table_list %}</select>');
 		
 		} else {
 			$(this).parent().find(".additional_input").html('');
@@ -31,7 +31,7 @@ function dosubmit() {
 				if(related_table == "") return;
 				column_text += ":related--" + related_table;
 				
-			} else if(data_type == "predefined") {
+			} else if(data_type == "builtin") {
 				var related_table = $(this).find("select[name='related'] option:selected").val();
 				if(related_table == "") return;
 				column_text += ":related--" + related_table;

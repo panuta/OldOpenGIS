@@ -1,6 +1,8 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 
+from opengis import sql
+
 class Account(models.Model):
 	user = models.ForeignKey(User, primary_key=True)
 	account_type = models.IntegerField(default=0)
@@ -9,7 +11,7 @@ class Account(models.Model):
 		return self.user.username
 
 ######################################################
-# PREDEFINED TABLE
+# BUILT-IN TABLE
 ######################################################
 class ThailandRegion(models.Model):
 	name = models.CharField(max_length=128)
@@ -19,6 +21,38 @@ class ThailandRegion(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Info(object):
+		code = 'thailand_region'
+		table_name = 'ThailandRegion'
+		name = 'Thailand Region'
+		columns = {
+			'id':{
+				'name':'ID',
+				'physical_name':'id',
+				'type':sql.TYPE_INTEGER,
+				'related_table':'',
+			},
+			'name':{
+				'name':'Name',
+				'physical_name':'name',
+				'type':sql.TYPE_CHARACTER,
+				'related_table':'',
+			},
+			'name_th':{
+				'name':'Name in Thai',
+				'physical_name':'name_th',
+				'type':sql.TYPE_CHARACTER,
+				'related_table':'',
+			},
+			'region':{
+				'name':'Region',
+				'physical_name':'region',
+				'type':sql.TYPE_REGION,
+				'related_table':'',
+			},
+		}
+		
 
 class ThailandProvince(models.Model):
 	name = models.CharField(max_length=256)
@@ -31,6 +65,54 @@ class ThailandProvince(models.Model):
 	
 	def __unicode__(self):
 		return self.name
+	
+	class Info(object):
+		code = 'thailand_province'
+		table_name = 'ThailandProvince'
+		name = 'Thailand Province'
+		columns = {
+			'id':{
+				'name':'ID',
+				'physical_name':'id',
+				'type':sql.TYPE_INTEGER,
+				'related_table':'',
+			},
+			'name':{
+				'name':'Name',
+				'physical_name':'name',
+				'type':sql.TYPE_CHARACTER,
+				'related_table':'',
+			},
+			'name_th':{
+				'name':'Name in Thai',
+				'physical_name':'name_th',
+				'type':sql.TYPE_CHARACTER,
+				'related_table':'',
+			},
+			'region':{
+				'name':'Region',
+				'physical_name':'region',
+				'type':sql.TYPE_REGION,
+				'related_table':'',
+			},
+			'location':{
+				'name':'Location',
+				'physical_name':'location',
+				'type':sql.TYPE_LOCATION,
+				'related_table':'',
+			},
+			'in_region':{
+				'name':'In Region',
+				'physical_name':'in_region',
+				'type':sql.TYPE_BUILT_IN_TABLE,
+				'related_table':'thailand_region',
+			},
+		}
+
+REGISTERED_BUILT_IN_TABLES = {
+	ThailandRegion.Info.code:ThailandRegion,
+	ThailandProvince.Info.code:ThailandProvince,
+}
 
 ######################################################
 # USER TABLE
@@ -40,6 +122,8 @@ class UserTable(models.Model):
 	account = models.ForeignKey(Account)
 	table_name = models.CharField(max_length=512)
 	table_class_name = models.CharField(max_length=512, null=True)
+	description = models.CharField(max_length=512, null=True)
+	tags = models.CommaSeparatedIntegerField(max_length=1024, null=True)
 	share_level = models.IntegerField(default=0) # 0-Private, 9-Public
 	
 	def __unicode__(self):

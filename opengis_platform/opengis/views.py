@@ -12,7 +12,7 @@ from django.template import RequestContext
 from django.utils import simplejson
 
 import opengis
-from opengis import constants, predefined, sql, errors, query, utilities
+from opengis import constants, sql, errors, query, utilities
 from opengis.models import *
 from opengis.forms import *
 from opengis.shortcuts import *
@@ -77,7 +77,7 @@ def create_user_table(request):
 			elif type_string == "location": column_type = sql.TYPE_LOCATION
 			elif type_string == "user": column_type = sql.TYPE_USER
 			elif type_string == "mine": column_type = sql.TYPE_MY_TABLE
-			elif type_string == "predefined": column_type = sql.TYPE_PREDEFINED_TABLE
+			elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
 			
 			if column_type != 0:
 				column['type'] = column_type
@@ -247,8 +247,8 @@ def query_user_table(request, username, query_name):
 		result_columns.append(column)
 	
 	# Create Starter Model
-	if user_query.starter_table in predefined.PREDEFINED_TABLES:
-		starter_model = (eval(predefined.PREDEFINED_TABLES[user_query.starter_table]['table_name']))
+	if user_query.starter_table in REGISTERED_BUILT_IN_TABLES:
+		starter_model = REGISTERED_BUILT_IN_TABLES[user_query.starter_table]
 	
 	else:
 		user_table = UserTable.objects.get(pk=user_query.starter_table)
@@ -377,11 +377,9 @@ def query_user_table(request, username, query_name):
 								else:
 									related_table = column_info.related_table
 						
-							if related_table in predefined.PREDEFINED_TABLES:
-								predefined_table_info = predefined.PREDEFINED_TABLES[related_table]
-
-								column_mapping = predefined_table_info['columns']
-								hierarchy_model_object = (eval(predefined.PREDEFINED_TABLES[related_table]['table_name']))
+							if related_table in REGISTERED_BUILT_IN_TABLES:
+								hierarchy_model_object = REGISTERED_BUILT_IN_TABLES[related_table]
+								column_mapping = hierarchy_model_object.columns
 
 							else:
 								hierarchy_user_table = UserTable.objects.get(pk=related_table)

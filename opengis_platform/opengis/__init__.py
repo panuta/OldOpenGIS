@@ -10,7 +10,7 @@ user_activated.connect(registered_user_callback)
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from opengis.models import *
-from opengis import sql, predefined
+from opengis import sql
 
 from django.utils.encoding import *
 
@@ -56,10 +56,8 @@ def _create_model(user_table, user_table_columns):
 			
 			attrs[column.physical_column_name] = models.ForeignKey(_create_model(my_table, my_table_columns), null=True)
 		
-		elif column.data_type == sql.TYPE_PREDEFINED_TABLE:
-			dbms_table_name = predefined.PREDEFINED_TABLES[column.related_table]['table_name']
-			# attrs[column.physical_column_name] = models.ForeignKey(eval(dbms_table_name), null=True)
-			attrs[column.physical_column_name] = models.ForeignKey(globals()[dbms_table_name], null=True)
+		elif column.data_type == sql.TYPE_BUILT_IN_TABLE:
+			attrs[column.physical_column_name] = models.ForeignKey(REGISTERED_BUILT_IN_TABLES[column.related_table], null=True)
 	
 	attrs['objects'] = models.GeoManager()
 	
@@ -75,10 +73,8 @@ class UserTableColumnManager(object):
 		
 		starter_column_mapping = dict()
 		
-		if starter_table in predefined.PREDEFINED_TABLES:
-			predefined_table = predefined.PREDEFINED_TABLES[starter_table]
-			
-			self.is_start_with_predefined = True
+		if starter_table in REGISTERED_BUILT_IN_TABLES:
+			self.is_start_with_built_in = True
 			self.columns_cache = None
 			
 		else:
@@ -87,18 +83,18 @@ class UserTableColumnManager(object):
 			for table_column in UserTableColumn.objects.filter(table=UserTable(pk=starter_table)):
 				starter_column_mapping[table_column.physical_column_name] = table_column
 			
-			self.is_start_with_predefined = False
+			self.is_start_with_built_in = False
 			self.columns_cache = {starter_table:starter_column_mapping}
 	
 	
 	def get_column_info(self, column_hierarchy, column_name):
 	
-		if self.is_start_with_predefined:
-			column_mapping = predefined.PREDEFINED_TABLES[self.starter_table]['columns']
+		if self.is_start_with_built_in:
+			column_mapping = REGISTERED_BUILT_IN_TABLES[self.starter_table].Info.columns
 			
 			for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
 				column_info = column_mapping[hierarchy]
-				column_mapping = predefined.PREDEFINED_TABLES[column_info['related_table']]['columns']
+				column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related_table']].Info.columns
 		
 			return {
 				'name':column_mapping[column_name]['name'],
@@ -110,10 +106,10 @@ class UserTableColumnManager(object):
 		else:
 			column_mapping = self.columns_cache[self.starter_table]
 			
-			PREDEFINED_TABLE_CHAIN_STARTED = False
+			BUILT_IN_TABLE_CHAIN_STARTED = False
 			
 			for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
-				if not PREDEFINED_TABLE_CHAIN_STARTED:
+				if not BUILT_IN_TABLE_CHAIN_STARTED:
 					column_info = column_mapping[hierarchy]
 				
 					if sql.TYPE_MY_TABLE == column_info.data_type:
@@ -126,20 +122,16 @@ class UserTableColumnManager(object):
 						else:
 							column_mapping = self.columns_cache[column_info.related_table]
 				
-					elif sql.TYPE_PREDEFINED_TABLE == column_info.data_type:
-						PREDEFINED_TABLE_CHAIN_STARTED = True
-						
-						predefined_table = predefined.PREDEFINED_TABLES[column_info.related_table]
-						column_mapping = predefined_table['columns']
+					elif sql.TYPE_BUILT_IN_TABLE == column_info.data_type:
+						BUILT_IN_TABLE_CHAIN_STARTED = True
+						column_mapping = REGISTERED_BUILT_IN_TABLES[column_info.related_table].Info.columns
 				
 				else:
 					column_info = column_mapping[hierarchy]
-					
-					predefined_table = predefined.PREDEFINED_TABLES[column_info['related']]
-					column_mapping = predefined_table['columns']
+					column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related']].Info.columns
 			
-			if PREDEFINED_TABLE_CHAIN_STARTED:
-				# Column data from predefined table columns dict
+			if BUILT_IN_TABLE_CHAIN_STARTED:
+				# Column data from built in table columns dict
 				return {
 					'name':column_mapping[column_name]['name'], 
 					'type':column_mapping[column_name]['type'], 

@@ -1,6 +1,6 @@
 from django import template
 
-from opengis import predefined
+from opengis.models import *
 
 register = template.Library()
 
@@ -20,7 +20,7 @@ def generate_data_type_list():
 		+ '<option value="location">Location</option>' \
 		+ '<option value="user">User</option>' \
 		+ '<option value="mine">My Table</option>' \
-		+ '<option value="predefined">Predefined Table</option>'
+		+ '<option value="builtin">Built In Table</option>'
 
 @register.simple_tag
 def generate_user_table_list(user_tables):
@@ -30,11 +30,11 @@ def generate_user_table_list(user_tables):
 	return html
 
 @register.simple_tag
-def generate_predefined_table_list():
+def generate_built_in_table_list():
 	html = ""
-	for table_key in predefined.PREDEFINED_TABLES.keys():
-		table = predefined.PREDEFINED_TABLES[table_key]
-		html += '<option value="' + table['code'] + '">' + table['name'] + '</option>'
+	for table_key in REGISTERED_BUILT_IN_TABLES.keys()
+		table_model = REGISTERED_BUILT_IN_TABLES[table_key]
+		html += '<option value="' + table_model.Info.code + '">' + table_model.Info.name + '</option>'
 	
 	return html
 		

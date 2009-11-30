@@ -22,7 +22,7 @@ class UserQueryTest(TestCase):
 	def test_case1(self):
 		"""
 		Test
-		- Query from predefined table, no column hierarchy
+		- Query from built in table, no column hierarchy
 		- Result limitation
 		- Display column with custom display name
 		- Filter 'equal'
