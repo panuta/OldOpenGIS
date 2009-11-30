@@ -35,7 +35,7 @@ def as_string(value):
 		return str(value.id)
 
 	elif type(value).__name__=='date':
-		return str(value.year) + utilities._two_digit(value.month) + utilities._two_digit(value.day)
+		return str(value.year) + _two_digit(value.month) + _two_digit(value.day)
 
 	else:
 		return simplejson.dumps(value)

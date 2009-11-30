@@ -413,13 +413,13 @@ def query_user_table(request, username, query_name):
 	
 	# Different result format (default is JSON)
 	if request.GET.get('format') == "jsonp" and request.GET.get('callback'):
-		return HttpResponse(request.GET.get('callback') + '({"query":"' + query_name + '","columns":[' + ','.join(result_columns) + '],"values":' + utilities.json_dumps(result) + '})')
+		return HttpResponse(request.GET.get('callback') + '({"query":"' + query_name + '","columns":["' + '","'.join(result_columns) + '"],"values":' + utilities.json_dumps(result) + '})')
 	
 	elif request.GET.get('format') == "geojson":
 		return HttpResponse(utilities.convert_query_result_to_geojson(request, result_columns, result))
 
 	else:
-		return HttpResponse('{"query":"' + query_name + '","columns":' + ','.join(result_columns) + ',"values":' + utilities.json_dumps(result) + '}')
+		return HttpResponse('{"query":"' + query_name + '","columns":["' + '","'.join(result_columns) + '"],"values":' + utilities.json_dumps(result) + '}')
 
 @login_required
 def build_user_table_query(request):

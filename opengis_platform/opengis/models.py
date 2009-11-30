@@ -58,7 +58,7 @@ class ThailandProvince(models.Model):
 	name = models.CharField(max_length=256)
 	name_th = models.CharField(max_length=256)
 	region = models.MultiPolygonField(null=True)
-	region_simple = models.MultiPolygonField(null=True)
+	# region_simple = models.MultiPolygonField(null=True)
 	location = models.PointField(null=True)
 	in_region = models.ForeignKey(ThailandRegion, null=True)
 	objects = models.GeoManager()
@@ -123,7 +123,6 @@ class UserTable(models.Model):
 	table_name = models.CharField(max_length=512)
 	table_class_name = models.CharField(max_length=512, null=True)
 	description = models.CharField(max_length=512, null=True)
-	tags = models.CommaSeparatedIntegerField(max_length=1024, null=True)
 	share_level = models.IntegerField(default=0) # 0-Private, 9-Public
 	
 	def __unicode__(self):
@@ -136,6 +135,10 @@ class UserTableColumn(models.Model):
 	data_type = models.IntegerField(default=0)
 	related_table = models.CharField(max_length=512, null=True)
 
+class UserTableTag(models.Model):
+	table = models.ForeignKey(UserTable)
+	tag_name = models.CharField(max_length=512)
+
 ######################################################
 # USER QUERY
 ######################################################
@@ -143,6 +146,7 @@ class UserTableColumn(models.Model):
 class UserQuery(models.Model):
 	account = models.ForeignKey(Account)
 	query_name = models.CharField(max_length=512)
+	description = models.CharField(max_length=512, null=True)
 	starter_table = models.CharField(max_length=128)
 	is_distinct = models.BooleanField(default=False)
 	result_limit = models.IntegerField(default=0, null=True)

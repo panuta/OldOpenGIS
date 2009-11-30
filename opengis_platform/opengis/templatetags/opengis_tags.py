@@ -32,7 +32,7 @@ def generate_user_table_list(user_tables):
 @register.simple_tag
 def generate_built_in_table_list():
 	html = ""
-	for table_key in REGISTERED_BUILT_IN_TABLES.keys()
+	for table_key in REGISTERED_BUILT_IN_TABLES.keys():
 		table_model = REGISTERED_BUILT_IN_TABLES[table_key]
 		html += '<option value="' + table_model.Info.code + '">' + table_model.Info.name + '</option>'
 	
