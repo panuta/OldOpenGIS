@@ -28,41 +28,34 @@ from registration.forms import RegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
 
 def view_homepage(request):
-	if request.user.is_authenticated():
-		return redirect(settings.LOGIN_REDIRECT_URL)
+	if request.user.is_authenticated(): return redirect(settings.LOGIN_REDIRECT_URL)
 
-	else:
-		if request.method == "POST":
-			submit_type = request.POST.get('submit_button')
+	if request.method == "POST":
+		submit_type = request.POST.get('submit_button')
 
-			if submit_type == "register":
-				from registration.views import register
-				return register(request, 'registration.backends.default.DefaultBackend')
+		if submit_type == "register":
+			from registration.views import register
+			return register(request, 'registration.backends.default.DefaultBackend')
 
-			elif submit_type == "login":
-				from django.contrib.auth.views import login
-				return login(request)
-
-			else:
-				return redirect("/")
+		elif submit_type == "login":
+			from django.contrib.auth.views import login
+			return login(request)
 
 		else:
-			register_form = RegistrationForm(auto_id=False)
-			login_form = AuthenticationForm(auto_id=False)
+			return redirect("/")
 
-		return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "homepage.html", {'register_form':register_form, 'login_form':login_form}, context_instance=RequestContext(request))
+	else:
+		register_form = RegistrationForm(auto_id=False)
+		login_form = AuthenticationForm(auto_id=False)
+
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "homepage.html", {'register_form':register_form, 'login_form':login_form}, context_instance=RequestContext(request))
 
 ##############################
 # PROFILE
 ##############################
-@login_required
 def view_user_home(request, username):
-	try:
-		(user, account) = check_user_auth(request, username)
-	except errors.OpenGISNotLoginError:
-		return shortcuts.redirect_to_login(request)
-	else:
-		if request.user.username == username: return redirect(reverse("opengis_view_my_home"))
+	(user, account, is_owner) = get_user_auth(request, username)
+	if is_owner: return redirect(reverse("opengis_view_my_home"))
 	
 	if user == request.user:
 		user_tables = UserTable.objects.filter(account=account).order_by('-created')[:5]
@@ -70,34 +63,47 @@ def view_user_home(request, username):
 	else:
 		user_tables = UserTable.objects.filter(account=account, share_level=9).order_by('-created')[:5]
 		user_queries = UserQuery.objects.filter(account=account, share_level=9).order_by('-created')[:5]
-
+	
+	for table in user_tables: table.columns = [column.column_name for column in UserTableColumn.objects.filter(table=table)]
+	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "user_home.html", {'account':account, 'user_tables':user_tables, 'user_queries':user_queries}, context_instance=RequestContext(request))
 
 ##############################
 # DYNAMIC TABLE
 ##############################
-@login_required
 def list_user_table(request, username):
-	try:
-		(user, account) = check_user_auth(request, username)
-	except errors.OpenGISNotLoginError:
-		return shortcuts.redirect_to_login(request)
-	else:
-		if request.user.username == username: return redirect(reverse("opengis_list_my_table"))
+	(user, account, is_owner) = get_user_auth(request, username)
+	if is_owner: return redirect(reverse("opengis_list_my_table"))
 	
 	if user == request.user:
 		user_tables = UserTable.objects.filter(account=account)
 	else:
 		user_tables = UserTable.objects.filter(account=account, share_level=9)
 	
+	for table in user_tables: table.columns = [column.column_name for column in UserTableColumn.objects.filter(table=table)]
+	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_list.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
 
-@login_required
+def ajax_list_user_table(request):
+	username = request.GET.get('username')
+	
+	try:
+		(user, account) = check_user_auth(request, username)
+	except errors.OpenGISNotLoginError:
+		return HttpResponse(errors.format_ajax_return(errors.AJAX_NOT_AUTHENTICATED))
+	
+	if user == request.user:
+		user_tables = UserTable.objects.filter(account=account)
+	else:
+		user_tables = UserTable.objects.filter(account=account, share_level=9)
+	
+	result = [{'id':table.id,'name':table.table_name,'description':table.description if table.description else ''} for table in user_tables]
+	
+	return HttpResponse(errors.format_ajax_return(errors.AJAX_SUCCESS,{},"tables:" + simplejson.dumps(result)))
+
 def view_user_table(request, username, table_name):
 	account = Account.objects.get(user=request.user)
 	
-	print table_name
-
 	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
 	user_table.columns = UserTableColumn.objects.filter(table=user_table)
 
@@ -138,7 +144,7 @@ def create_user_table(request):
 			
 			type_string = splited[1]
 			
-			column_type = 0
+			if type_string == "mine" or type_string == "others": type_string = "table"
 			
 			if type_string == "char": column_type = sql.TYPE_CHARACTER
 			elif type_string == "number": column_type = sql.TYPE_NUMBER
@@ -149,7 +155,12 @@ def create_user_table(request):
 			elif type_string == "location": column_type = sql.TYPE_LOCATION
 			elif type_string == "table": column_type = sql.TYPE_USER_TABLE
 			elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
+			else: column_type = 0
 			
+			if type_string == "table":
+				# TODO Check table share level
+				pass
+				
 			if column_type != 0:
 				column['type'] = column_type
 				column['physical_name'] = "column_" + str(column_count)
@@ -157,25 +168,26 @@ def create_user_table(request):
 				
 				column_count = column_count + 1
 		
-		# Create table metadata
-		user_table = UserTable.objects.create(account=account, table_name=table_name, description=description)
-		user_table.table_class_name = constants.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
-		user_table.save()
+		if table_name and columns:
+			# Create table metadata
+			user_table = UserTable.objects.create(account=account, table_name=table_name, description=description)
+			user_table.table_class_name = constants.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
+			user_table.save()
 		
-		user_table_columns = list()
-		for column in columns:
-			user_table_columns.append(UserTableColumn.objects.create(
-				table=user_table, 
-				column_name=column.get('name'), 
-				physical_column_name=column.get('physical_name'), 
-				data_type=column.get('type'), 
-				related_table=column.get('related')
-				))
+			user_table_columns = list()
+			for column in columns:
+				user_table_columns.append(UserTableColumn.objects.create(
+					table=user_table, 
+					column_name=column.get('name'), 
+					physical_column_name=column.get('physical_name'), 
+					data_type=column.get('type'), 
+					related_table=column.get('related')
+					))
 		
-		# Create table at database server
-		sql.sql_create_table(user_table, user_table_columns)
+			# Create table at database server
+			sql.sql_create_table(user_table, user_table_columns)
 		
-		return redirect(reverse("opengis_create_my_table"))
+		return redirect(reverse("opengis_view_my_table", args=[table_name]))
 	else:
 		form = CreateTableForm()
 	
@@ -183,32 +195,13 @@ def create_user_table(request):
 	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_create.html", {'account':account, 'form':form, 'user_tables':user_tables}, context_instance=RequestContext(request))
 
+@login_required
 def edit_user_table(request):
 	pass
 
+@login_required
 def delete_user_table(request):
 	pass
-
-@login_required
-def input_user_table(request, table_name):
-	account = Account.objects.get(user=request.user)
-
-	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
-	user_table.columns = UserTableColumn.objects.filter(table=user_table)
-	
-	if request.method == "POST":
-		table_model = opengis._create_model_from_name(user_table.table_name, account)
-		
-		new_object = table_model()
-		
-		for column in user_table.columns:
-			setattr(new_object, column.column_name, request.POST.get(column.column_name))
-		
-		new_object.save()
-		
-		return redirect(reverse("opengis_input_my_table", args=[user_table.table_name], ))
-
-	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_input.html", {'account':account, 'user_table':user_table}, context_instance=RequestContext(request))
 
 @login_required
 def import_user_table(request, table_name):
@@ -271,12 +264,8 @@ def import_user_table(request, table_name):
 # TABLE QUERY
 ##############################
 def list_user_query(request, username):
-	try:
-		(user, account) = check_user_auth(request, username)
-	except errors.OpenGISNotLoginError:
-		return shortcuts.redirect_to_login(request)
-	else:
-		if request.user.username == username: return redirect(reverse("opengis_list_my_query"))
+	(user, account, is_owner) = get_user_auth(request, username)
+	if is_owner: return redirect(reverse("opengis_list_my_query"))
 	
 	user_queries = UserQuery.objects.filter(account=account)
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "query_list.html", {'account':account, 'user_queries':user_queries}, context_instance=RequestContext(request))
@@ -287,12 +276,15 @@ def view_user_query(request, query_name):
 def visualize_user_query(request, query_name):
 	pass
 
+@login_required
 def create_user_query(request):
 	pass
 
+@login_required
 def edit_user_query(request, query_name):
 	pass
 
+@login_required
 def delete_user_query(request, query_name):
 	pass
 

@@ -6,25 +6,24 @@
 <div class="table_page_nav">
 	<ul>
 		<li><a href="{% url opengis_import_my_table user_table.table_name %}">Import Data</a></li>
-		<li><a href="{% url opengis_input_my_table user_table.table_name %}">Input Data</a></li>
+		<li><a href="#">Input Data</a></li>
 		<li><a href="{% url opengis_edit_my_table user_table.table_name %}">Edit Table</a></li>
 		<li><a href="{% url opengis_delete_my_table user_table.table_name %}" class="warning">Delete</a></li>
 	</ul>
 </div>
 
 <div class="style_table_view">
-	{% if table_data %}
-		<table class="view_data">
-			<thead>
-				<tr>
-					<th></th>
-					<th>ID</th>
-				{% for column in user_table.columns %}
-					<th>{{column.column_name}}</th>
-				{% endfor %}
-				</tr>
-			</thead>
-			<tbody>
+	<table class="view_data">
+		<thead>
+			<tr>
+				{% if table_data %}<th></th>{% endif %}
+				<th>ID</th>
+			{% for column in user_table.columns %}
+				<th>{{column.column_name}}</th>
+			{% endfor %}
+			</tr>
+		</thead>
+		<tbody>
 			{% for data_row in table_data %}
 				<tr>
 					<td><a href="#">Edit</a></td>
@@ -34,9 +33,9 @@
 				{% endfor %}
 				</tr>
 			{% endfor %}
-			</tbody>
-		</table>
-	{% else %}
+		</tbody>
+	</table>
+	{% if not table_data %}
 		<div class="no_table_data">No data in table</div>
 	{% endif %}
 </div>

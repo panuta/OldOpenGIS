@@ -16,4 +16,10 @@ class AJAXSimpleExceptionResponse:
                     response += "%s\n" % tb
                 return HttpResponseServerError(response)
 
-		
+from opengis import errors
+from opengis.shortcuts import redirect_to_login
+
+class OpenGISExceptionMiddleware:
+	def process_exception(self, request, exception):
+		if type(exception).__name__ == type(errors.OpenGISNotLoginError()).__name__: # Have no idea why isinstance is always return False here, use name comparison instead
+			return redirect_to_login(request)

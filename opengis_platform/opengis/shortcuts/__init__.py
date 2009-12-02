@@ -3,9 +3,8 @@ from django.contrib.auth.models import User
 from opengis import errors
 from opengis.models import Account
 
-def check_user_auth(request, username):
+def get_user_auth(request, username):
 	if username:
-		# TODO Check authorization
 		user = User.objects.get(username=username)
 		account = Account.objects.get(user=user)
 	else:
@@ -13,9 +12,9 @@ def check_user_auth(request, username):
 			user = request.user
 			account = Account.objects.get(user=request.user)
 		else:
-			raise errors.OpenGISNotLoginError()
+			raise errors.OpenGISNotLoginError
 	
-	return (user, account)
+	return (user, account, username == request.user.username)
 
 def redirect_to_login(request):
 	from django.conf import settings

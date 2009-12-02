@@ -4,39 +4,49 @@
 {% block head_content %}
 <script type="text/javascript">
 $(document).ready(function() {
-	$("select[name='column_type']").change(function() {
-		var data_type = $(this).find("option:selected").val();
-		
-		if(data_type == "mine") { // Foreign Table
-			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_user_table_list user_tables %}</select>');
-		
-		} else 	if(data_type == "builtin") { // Built-in Table
-			$(this).parent().find(".additional_input").html('<select name="related"><option></option>{% generate_built_in_table_list %}</select>');
-		
-		} else {
-			$(this).parent().find(".additional_input").html('');
-		}
-	});
-	
-	
 	$(".columns_form select").change(function() {
 		var data_type = $(this).find("option:selected").val();
 		
 		if(data_type == "datetime") {
 			$(this).parent().find(".more_inputs").html('<select class="related"><option></option><option value="datetime">Date and Time</option><option value="date">Date only</option><option value="time">Time only</option></select>');
-			
+		
+		} else if(data_type == "builtin") {
+			$(this).parent().find(".more_inputs").html('<select class="related"><option></option>{% generate_built_in_table_list %}</select>');
+		
 		} else if(data_type == "table") {
+			$(this).parent().find(".more_inputs").html('<select class="related"><option></option><option value="mine">My Tables</option><option value="others">User\'s Table</option></select>');
 			
-			// more_inputs
+			$(this).parent().find(".more_inputs select").change(function() {
+				var select_object = $(this);
+				var table_type = $(this).find("option:selected").val();
+				
+				$(this).parent().find("select.data_type_table_tyle").remove();
+				
+				if(table_type == "mine") {
+					$.getJSON("{% url opengis_ajax_list_user_table %}", function(data) {
+						var list_html = '';
+						for(var i in data.tables) {
+							list_html += '<option value="' + data.tables[i].id + '">' + data.tables[i].name + '</option>';
+						}
+						
+						select_object.parent().append('<select class="data_type_table_tyle"><option></option>' + list_html + '</select>');
+					});
+				
+				} else if(table_type == "others") {
+					// TODO Open Popup to ask for username, table code etc.
+					
+				}
+			});
+		
 		} else {
 			$(this).parent().find(".more_inputs").html('');
 		}
 	});
 	
-	
 	// Add new column click event
 	$(".columns_form a").click(function() {
-		$(".columns_form ol li:last").before("<li>New column</li>");
+		var col_num = $(".columns_form ol li").length - 1; // -2+1
+		$(".columns_form ol li:last").before('<li class="input"><label>Column ' + col_num + '</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>');
 		return false;
 	});
 	
@@ -48,42 +58,33 @@ $(document).ready(function() {
 
 function dosubmit() {
 	$(".columns_form li.input").each(function() {
+		var column_name = $(this).find("input").val();
 		var data_type = $(this).find("select.data_type option:selected").val();
 		
-		if(data_type != "") {
-			var column_param = $(this).find("input").val();
+		if(column_name != "" && data_type != "") {
+			var column_parameter = "";
 			
 			if(data_type == "datetime") {
 				var datetime_type = $(this).find("select.related option:selected").val();
-				column_param = column_param + ":" + datetime_type;
-				
-			} else if(data_type == "table") {
-				
-			} else {
-				column_param = column_param + ":" + data_type;
-			}
+				if(datetime_type != "") column_parameter = column_name + ":" + datetime_type;
 			
-			$("form").append('<input type="hidden" name="columns" value="' + column_param + '"/>');
-			
-			
-			/*
-			var column_text = $(this).find("input[name='column_name']").val() + ":" + data_type;
-
-			if(data_type == "mine") {
-				var related_table = $(this).find("select[name='related'] option:selected").val();
-				if(related_table == "") return;
-				column_text += ":related--" + related_table;
-				
 			} else if(data_type == "builtin") {
-				var related_table = $(this).find("select[name='related'] option:selected").val();
-				if(related_table == "") return;
-				column_text += ":related--" + related_table;
+				var builtin_table_id = $(this).find("select.related option:selected").val();
+				if(datetime_type != "") column_parameter = column_name + ":" + data_type + ":related--" + builtin_table_id;
+
+			} else if(data_type == "table") {
+				var table_type = $(this).find("select.related option:selected").val();
+				var table_id = $(this).find("select.data_type_table_tyle option:selected").val();
+				
+				if(table_type != "" && table_id != "") column_parameter = column_name + ":" + table_type + ":related--" + table_id;
+
+			} else {
+				column_parameter = column_name + ":" + data_type;
 			}
-			*/
 			
-			
-			
-			
+			if(column_parameter != "") {
+				$("form").append('<input type="hidden" name="columns" value="' + column_parameter + '"/>');
+			}
 		}
 	});
 }
@@ -96,12 +97,11 @@ function dosubmit() {
 <div class="style_table_create">
 	<form action="." method="post" class="std_form">
 		<ul>
-			<li><label for="id_table_name">Table Name:</label>{{form.table_name}}</li>
-			<li><label for="id_description">Description:</label>{{form.description}}</li>
-			<li><label for="id_tags">Tags:</label>{{form.tags}}</li>
+			<li class="long_textbox"><label for="id_table_name">Table Name:</label>{{form.table_name}}</li>
+			<li class="medium_textarea"><label for="id_description">Description:</label>{{form.description}}</li>
+			<li class="long_textbox"><label for="id_tags">Tags:</label>{{form.tags}}<div class="comment">* Example: thailand,female population,census</div></li>
 		</ul>
 		<div class="columns_form">
-			<label class="columns_label">Columns:</label>
 			<ol>
 				<li class="caption"><div class="column_name">Column Name</div><div class="data_type">Data Type</div><div class="clear"></div></li>
 				<li class="input"><label>Column 1</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
@@ -115,20 +115,4 @@ function dosubmit() {
 		<button type="submit">Create Table</button>
 	</form>
 </div>
-
-
-
-<!--
-	<form action="." method="post">
-		<div><label>Table name:</label><input type="text" name="table_name" id="id_table_name" /></div>
-		<div class="column_input"><label>Column 1:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
-		<div class="column_input"><label>Column 2:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
-		<div class="column_input"><label>Column 3:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
-		<div class="column_input"><label>Column 4:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
-		<div class="column_input"><label>Column 5:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
-		<div>
-			<button type="submit" onclick="return dosubmit();">Submit</button>
-		</div>
-	</form>
--->
 {% endblock %}

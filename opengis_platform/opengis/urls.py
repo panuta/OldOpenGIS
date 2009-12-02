@@ -18,25 +18,27 @@ urlpatterns = patterns('opengis.views',
 	# ----- User Table ----- #
 	url(r'^my/tables/create/$', 'create_user_table', name="opengis_create_my_table"),
 	
-	url(r'^my/table/(?P<table_name>[\S\s]+)/$', 'view_user_table', name="opengis_view_my_table", kwargs={'username':''}),
-	url(r'^my/table/(?P<table_name>[\S\s]+)/add/$', 'input_user_table', name="opengis_input_my_table"),
-	url(r'^my/table/(?P<table_name>[\S\s]+)/import/$', 'import_user_table', name="opengis_import_my_table"),
-	url(r'^my/table/(?P<table_name>[\S\s]+)/edit/$', 'edit_user_table', name="opengis_edit_my_table"),
-	url(r'^my/table/(?P<table_name>[\S\s]+)/delete/$', 'delete_user_table', name="opengis_delete_my_table"),
+	url(r'^my/table/(?P<table_name>[^\/]+)/$', 'view_user_table', name="opengis_view_my_table", kwargs={'username':''}),
+	url(r'^my/table/(?P<table_name>[^\/]+)/import/$', 'import_user_table', name="opengis_import_my_table"),
+	url(r'^my/table/(?P<table_name>[^\/]+)/edit/$', 'edit_user_table', name="opengis_edit_my_table"),
+	url(r'^my/table/(?P<table_name>[^\/]+)/delete/$', 'delete_user_table', name="opengis_delete_my_table"),
 	
-	url(r'^user/(?P<username>\w+)/table/(?P<table_name>[\S\s]+)/$', 'view_user_table', name="opengis_view_user_table"),
+	url(r'^user/(?P<username>\w+)/table/(?P<table_name>[^\/]+)/$', 'view_user_table', name="opengis_view_user_table"),
 	
 	
 	# ----- User Query ----- #
 	url(r'^my/queries/create/$', 'create_user_query', name="opengis_create_my_query"),
 	
-	url(r'^my/query/(?P<query_name>[\S\s]+)/$', 'view_user_query', name="opengis_view_my_query", kwargs={'username':''}),
-	url(r'^my/query/(?P<query_name>[\S\s]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_my_query"),
-	url(r'^my/query/(?P<query_name>[\S\s]+)/edit/$', 'edit_user_query', name="opengis_edit_my_query"),
-	url(r'^my/query/(?P<query_name>[\S\s]+)/delete/$', 'delete_user_query', name="opengis_delete_my_query"),
+	url(r'^my/query/(?P<query_name>[^\/]+)/$', 'view_user_query', name="opengis_view_my_query", kwargs={'username':''}),
+	url(r'^my/query/(?P<query_name>[^\/]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_my_query"),
+	url(r'^my/query/(?P<query_name>[^\/]+)/edit/$', 'edit_user_query', name="opengis_edit_my_query"),
+	url(r'^my/query/(?P<query_name>[^\/]+)/delete/$', 'delete_user_query', name="opengis_delete_my_query"),
 	
-	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[\S\s]+)/$', 'view_user_query', name="opengis_view_user_query"),
-	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[\S\s]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_user_query"),
+	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[^\/]+)/$', 'view_user_query', name="opengis_view_user_query"),
+	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[^\/]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_user_query"),
+	
+	# Internal Ajax Call #
+	url(r'^ajax/internal/tables/list/$', 'ajax_list_user_table', name="opengis_ajax_list_user_table"),
 	
 	
 	
@@ -52,3 +54,5 @@ urlpatterns = patterns('opengis.views',
 	
 	# url(r'^user/(?P<account_username>\w+)/table/(?P<table_name>\w+)/visualize/$', 'get_user_table_visualize', name="opengis_get_user_table_visualize"),
 )
+
+# urlpatterns += patterns('',)

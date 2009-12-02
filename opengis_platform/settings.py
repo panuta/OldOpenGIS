@@ -46,8 +46,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-	'opengis_platform.middleware.AJAXSimpleExceptionResponse',
 	'django.middleware.transaction.TransactionMiddleware',
+	'opengis_platform.middleware.AJAXSimpleExceptionResponse',
+	'opengis_platform.middleware.OpenGISExceptionMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (

@@ -2,7 +2,7 @@ from django import forms
 
 class CreateTableForm(forms.Form):
 	table_name			= forms.CharField()
-	description			= forms.CharField(required=False)
+	description			= forms.CharField(required=False, widget=forms.Textarea())
 	tags				= forms.CharField(required=False)
 	share_level			= forms.ChoiceField(choices=(('9','Public'),('0','Private'),), required=False)
 

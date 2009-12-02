@@ -15,7 +15,7 @@
 			<ol>
 				{% for table in user_tables %}
 					<li class="item">
-						<h4><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a></h4>
+						<h4><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h4>
 						<p class="description">{{table.description|default:'No description'}}</p>
 						<p class="tags">tag1 tag2 tag3 tag4</p>
 						<div class="action_panel">

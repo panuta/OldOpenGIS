@@ -5,6 +5,7 @@ html,body {background-color:#555;}
 /* General Styles */
 .base_page_message {font-size:123.1%;text-align:center;margin:20px 0px;}
 h2 {font-size:153.9%;font-weight:bold;margin-bottom:10px;color:#333;}
+h2.color {color:#C63;}
 
 a:link, a:visited, a:active {color:#369;}
 a:hover {background-color:#369;color:#FFF;}
@@ -12,8 +13,11 @@ a:hover {background-color:#369;color:#FFF;}
 /* Standard Form Styles */
 .std_form ul {margin:15px 0px;}
 .std_form ul li {margin-bottom:15px;}
-.std_form ul li label {width:140px;display:block;float:left;font-size:108%;margin-left:5px;}
-.std_form button {margin-left:140px;}
+.std_form ul li label {width:140px;display:block;float:left;font-size:108%;padding-right:15px;text-align:right;}
+.std_form button {margin-left:155px;}
+.std_form .comment {margin-top:3px;color:#666;margin-left:155px;}
+.std_form .long_textbox input {width:400px;}
+.std_form .medium_textarea textarea {width:400px;height:100px;}
 
 /* Homepage */
 .style_homepage {width:975px;margin:0px auto;}
@@ -46,7 +50,8 @@ a:hover {background-color:#369;color:#FFF;}
 /* Share - Profile, Tables, Queries */
 .share_home ol li.item {border-bottom:1px solid #CCC;margin-bottom:15px;padding:0px 0px 10px 5px;}
 .share_home ol h4 {font-size:123.1%;font-weight:bold;margin-bottom:8px;}
-.share_home ol .description {font-size:108%;color:#666;margin-bottom:8px;}
+.share_home ol .columns {color:#666;font-size:0.9em;}
+.share_home ol .description {font-size:123.1%;color:#666;margin-bottom:8px;}
 .share_home ol .tags {margin-bottom:5px;}
 .share_home .no_list_item {color:#888;font-size:108%;margin-bottom:20px;}
 
@@ -82,8 +87,9 @@ a:hover {background-color:#369;color:#FFF;}
 
 .style_table_base .no_table_data {font-size:123.1%;color:#666;margin:15px 0px;font-style:italic;}
 
-.style_table_view table.view_data {border:1px solid #CCC;margin:15px 0px;}
-.style_table_view table.view_data th {border:1px solid #CCC;background-color:#EEE;padding:5px 10px;}
+.style_table_view {padding-bottom:15px;}
+.style_table_view table.view_data {border:1px solid #CCC;margin:15px 0px 0px 0px;;}
+.style_table_view table.view_data th {border:1px solid #CCC;background-color:#EEE;padding:5px 10px;font-weight:bold;}
 .style_table_view table.view_data td {border:1px solid #CCC;padding:5px 10px;}
 
 .style_table_import {margin-top:15px;}
@@ -93,9 +99,10 @@ a:hover {background-color:#369;color:#FFF;}
 .style_table_input {}
 
 .style_table_create form {margin-bottom:20px;}
-.style_table_create form button {margin-top:10px;margin-left:0px;}
+.style_table_create form button {margin-top:20px;margin-left:0px;}
 
-.style_table_create .columns_form label.columns_label {font-size:108%;margin:0px 0px 5px 5px;}
+.style_table_create .columns_form {margin-top:25px;border-top:1px solid #CCC;border-bottom:1px solid #CCC;padding-top:10px;}
+.style_table_create .columns_form ol {margin-top:5px;}
 .style_table_create .columns_form ol li {padding-bottom:15px;}
 .style_table_create .columns_form ol li.caption {padding-bottom:10px;color:#C63;}
 .style_table_create .columns_form ol li .column_name {margin-left:130px;width:165px;float:left;}
@@ -105,7 +112,7 @@ a:hover {background-color:#369;color:#FFF;}
 .style_table_create .columns_form ol li select.data_type {float:left;}
 
 .style_table_create .columns_form .more_inputs {float:left;margin-left:10px;}
-
+.style_table_create .columns_form .more_inputs select {margin-right:10px;}
 
 
 

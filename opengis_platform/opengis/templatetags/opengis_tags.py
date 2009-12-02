@@ -72,6 +72,7 @@ def generate_data_type_list():
 		+ '<option value="datetime">Date/Time</option>' \
 		+ '<option value="region">Region</option>' \
 		+ '<option value="location">Location</option>' \
+		+ '<option value="builtin">Other data</option>' \
 		+ '<option value="table">Table</option>'
 
 @register.simple_tag

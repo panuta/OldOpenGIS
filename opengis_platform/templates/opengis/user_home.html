@@ -29,15 +29,15 @@ $(document).ready(function() {
 		<ol>
 			{% for table in user_tables %}
 				<li class="item">
-					<h4><a href="{% url opengis_view_my_table table.table_name|urlencode %}">{{table.table_name}}</a></h4>
+					<h4><a href="{% url opengis_view_my_table table.table_name|urlencode %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h4>
 					<p class="description">{{table.description|default:'No description'}}</p>
 					<p class="tags">tag1 tag2 tag3 tag4</p>
 					{% ifequal user account.user %}
 					<div class="action_panel">
 						<ul>
-							<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
-							<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
-							<li class="warning"><a href="{% url opengis_delete_my_table table.table_name %}">Delete</a></li>
+							<li><a href="{% url opengis_import_my_table table.table_name|urlencode %}">Import Data</a></li>
+							<li><a href="{% url opengis_edit_my_table table.table_name|urlencode %}">Edit Table</a></li>
+							<li class="warning"><a href="{% url opengis_delete_my_table table.table_name|urlencode %}">Delete</a></li>
 						</ul>
 					</div>
 					{% endifequal %}
@@ -53,15 +53,15 @@ $(document).ready(function() {
 		<ol>
 			{% for query in user_queries %}
 				<li class="item">
-					<h4><a href="{% url opengis_view_my_query query.query_name %}">{{query.query_name}}</a></h4>
+					<h4><a href="{% url opengis_view_my_query query.query_name|urlencode %}">{{query.query_name}}</a></h4>
 					<p class="description">{{query.description|default:'No description'}}</p>
 					<div class="action_panel">
 						<ul>
-							<li><a href="{% my_url opengis_visualize_my_query opengis_visualize_user_query query.query_name %}">Visualize</a></li>
+							<li><a href="{% my_url opengis_visualize_my_query opengis_visualize_user_query query.query_name|urlencode %}">Visualize</a></li>
 							{% ifequal user account.user %}
 							<li><a href="#">Get Links</a></li>
-							<li><a href="{% url opengis_edit_my_query query.query_name %}">Edit Query</a></li>
-							<li class="warning"><a href="{% url opengis_delete_my_query query.query_name %}">Delete</a></li>
+							<li><a href="{% url opengis_edit_my_query query.query_name|urlencode %}">Edit Query</a></li>
+							<li class="warning"><a href="{% url opengis_delete_my_query query.query_name|urlencode %}">Delete</a></li>
 							{% endifequal %}
 						</ul>
 					</div>
