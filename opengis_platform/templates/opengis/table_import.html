@@ -1,6 +1,6 @@
-{% extends "./opengis/table_base.html" %}
+{% extends "./opengis/content_base.html" %}
 
-{% block table_body_content %}
+{% block sub_body_content %}
 <div class="table_page_header">Table Name: <h3><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a> &#155; Import Data</h3></div>
 
 <div class="style_table_import">

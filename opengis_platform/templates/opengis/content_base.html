@@ -2,5 +2,5 @@
 
 {% block body_content %}
 	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% url opengis_view_my_home %}">Profile</a> | <a href="{% url opengis_list_my_table %}">Tables</a> | <a href="{% url opengis_list_my_query %}">Queries</a></div>
-	<div class="style_table_base">{% block table_body_content %}{% endblock %}</div>
+	<div class="style_table_base">{% block sub_body_content %}{% endblock %}</div>
 {% endblock %}
