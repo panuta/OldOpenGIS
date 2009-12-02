@@ -1,7 +1,5 @@
 APPLICATION_NAME = "opengis"
 
-TEMPLATE_PREFIX = "./opengis/"
-
 # USER TABLE
 USER_TABLE_PREFIX = 'ut'
 

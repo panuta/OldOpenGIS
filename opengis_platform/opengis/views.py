@@ -21,23 +21,90 @@ def registered_user_callback(sender, **kwargs):
 	# Create a new Account model instance
 	Account.objects.create(user=kwargs['user'])
 
-@login_required
-def view_user_home(request):
-	account = Account.objects.get(user=request.user)
-	return render_to_response(constants.TEMPLATE_PREFIX + "user_home.html", {'account':account}, context_instance=RequestContext(request))
+##############################
+# HOMEPAGE
+##############################
+from registration.forms import RegistrationForm
+from django.contrib.auth.forms import AuthenticationForm
 
 def view_homepage(request):
-	return render_to_response(constants.TEMPLATE_PREFIX + "homepage.html", {}, context_instance=RequestContext(request))
+	if request.user.is_authenticated():
+		return redirect(settings.LOGIN_REDIRECT_URL)
+
+	else:
+		if request.method == "POST":
+			submit_type = request.POST.get('submit_button')
+
+			if submit_type == "register":
+				from registration.views import register
+				return register(request, 'registration.backends.default.DefaultBackend')
+
+			elif submit_type == "login":
+				from django.contrib.auth.views import login
+				return login(request)
+
+			else:
+				return redirect("/")
+
+		else:
+			register_form = RegistrationForm(auto_id=False)
+			login_form = AuthenticationForm(auto_id=False)
+
+		return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "homepage.html", {'register_form':register_form, 'login_form':login_form}, context_instance=RequestContext(request))
+
+##############################
+# PROFILE
+##############################
+@login_required
+def view_user_home(request, username):
+	try:
+		(user, account) = check_user_auth(request, username)
+	except errors.OpenGISNotLoginError:
+		return shortcuts.redirect_to_login(request)
+	else:
+		if request.user.username == username: return redirect(reverse("opengis_view_my_home"))
+	
+	if user == request.user:
+		user_tables = UserTable.objects.filter(account=account).order_by('-created')[:5]
+		user_queries = UserQuery.objects.filter(account=account).order_by('-created')[:5]
+	else:
+		user_tables = UserTable.objects.filter(account=account, share_level=9).order_by('-created')[:5]
+		user_queries = UserQuery.objects.filter(account=account, share_level=9).order_by('-created')[:5]
+
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "user_home.html", {'account':account, 'user_tables':user_tables, 'user_queries':user_queries}, context_instance=RequestContext(request))
 
 ##############################
 # DYNAMIC TABLE
 ##############################
+@login_required
+def list_user_table(request, username):
+	try:
+		(user, account) = check_user_auth(request, username)
+	except errors.OpenGISNotLoginError:
+		return shortcuts.redirect_to_login(request)
+	else:
+		if request.user.username == username: return redirect(reverse("opengis_list_my_table"))
+	
+	if user == request.user:
+		user_tables = UserTable.objects.filter(account=account)
+	else:
+		user_tables = UserTable.objects.filter(account=account, share_level=9)
+	
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_list.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
 
 @login_required
-def list_user_table(request):
+def view_user_table(request, username, table_name):
 	account = Account.objects.get(user=request.user)
-	user_tables = UserTable.objects.filter(account=account)
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_list.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
+	
+	print table_name
+
+	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
+	user_table.columns = UserTableColumn.objects.filter(table=user_table)
+
+	table_model = opengis._create_model(user_table, user_table.columns)
+	table_data = table_model.objects.all()
+
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_view.html", {'account':account, 'user_table':user_table, 'table_data':table_data}, context_instance=RequestContext(request))
 
 @login_required
 def create_user_table(request):
@@ -45,6 +112,8 @@ def create_user_table(request):
 	
 	if request.method == "POST":
 		table_name = request.POST.get('table_name')
+		
+		# TODO Check table name duplication
 		
 		raw_columns = request.POST.getlist('columns')
 		columns = list()
@@ -69,14 +138,13 @@ def create_user_table(request):
 			column_type = 0
 			
 			if type_string == "char": column_type = sql.TYPE_CHARACTER
-			elif type_string == "int": column_type = sql.TYPE_INTEGER
+			elif type_string == "number": column_type = sql.TYPE_NUMBER
 			elif type_string == "datetime": column_type = sql.TYPE_DATETIME
 			elif type_string == "date": column_type = sql.TYPE_DATE
 			elif type_string == "time": column_type = sql.TYPE_TIME
 			elif type_string == "region": column_type = sql.TYPE_REGION
 			elif type_string == "location": column_type = sql.TYPE_LOCATION
-			elif type_string == "user": column_type = sql.TYPE_USER
-			elif type_string == "mine": column_type = sql.TYPE_MY_TABLE
+			elif type_string == "table": column_type = sql.TYPE_USER_TABLE
 			elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
 			
 			if column_type != 0:
@@ -105,29 +173,18 @@ def create_user_table(request):
 		sql.sql_create_table(user_table, user_table_columns)
 		
 		return redirect(reverse("opengis_create_my_table"))
+	else:
+		form = CreateTableForm()
 	
 	user_tables = UserTable.objects.filter(account=account)
 	
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_create.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
-	
-def update_user_table(request):
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_create.html", {'account':account, 'form':form, 'user_tables':user_tables}, context_instance=RequestContext(request))
+
+def edit_user_table(request):
 	pass
 
 def delete_user_table(request):
 	pass
-
-@login_required
-def view_user_table(request, table_name):
-	account = Account.objects.get(user=request.user)
-	
-	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
-	user_table.columns = UserTableColumn.objects.filter(table=user_table)
-	
-	table_model = opengis._create_model(user_table, user_table.columns)
-	
-	data = table_model.objects.all()
-	
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_view.html", {'account':account, 'user_table':user_table, 'data':data}, context_instance=RequestContext(request))
 
 @login_required
 def input_user_table(request, table_name):
@@ -148,11 +205,13 @@ def input_user_table(request, table_name):
 		
 		return redirect(reverse("opengis_input_my_table", args=[user_table.table_name], ))
 
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_input.html", {'account':account, 'user_table':user_table}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_input.html", {'account':account, 'user_table':user_table}, context_instance=RequestContext(request))
 
 @login_required
 def import_user_table(request, table_name):
 	account = Account.objects.get(user=request.user)
+	
+	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
 	
 	if request.method == "POST":
 		form = ImportDataToTableForm(request.POST, request.FILES)
@@ -203,18 +262,41 @@ def import_user_table(request, table_name):
 	else:
 		form = ImportDataToTableForm(auto_id=False)
 	
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_import.html", {'account':account, 'form':form}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
 
 ##############################
 # TABLE QUERY
 ##############################
-def list_user_query(request):
-	account = Account.objects.get(user=request.user)
+def list_user_query(request, username):
+	try:
+		(user, account) = check_user_auth(request, username)
+	except errors.OpenGISNotLoginError:
+		return shortcuts.redirect_to_login(request)
+	else:
+		if request.user.username == username: return redirect(reverse("opengis_list_my_query"))
+	
 	user_queries = UserQuery.objects.filter(account=account)
-	return render_to_response(constants.TEMPLATE_PREFIX + "query_list.html", {'account':account, 'user_queries':user_queries}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "query_list.html", {'account':account, 'user_queries':user_queries}, context_instance=RequestContext(request))
 
 def view_user_query(request, query_name):
 	pass
+
+def visualize_user_query(request, query_name):
+	pass
+
+def create_user_query(request):
+	pass
+
+def edit_user_query(request, query_name):
+	pass
+
+def delete_user_query(request, query_name):
+	pass
+
+
+
+
+
 
 # Format: {'query_name':'query_name', columns:['column1',column2], values:[['value1', 'value2'],['value1', 'value2']]}
 def query_user_table(request, username, query_name):
@@ -421,12 +503,14 @@ def query_user_table(request, username, query_name):
 	else:
 		return HttpResponse('{"query":"' + query_name + '","columns":["' + '","'.join(result_columns) + '"],"values":' + utilities.json_dumps(result) + '}')
 
+
+
 @login_required
 def build_user_table_query(request):
 	account = Account.objects.get(user=request.user)
 	user_tables = UserTable.objects.filter(account=account)
 	
-	return render_to_response(constants.TEMPLATE_PREFIX + "table_query_builder.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_query_builder.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
 
 def ajax_get_tables_for_query_builder(request):
 	account = Account.objects.get(user=request.user)
@@ -541,4 +625,4 @@ def get_user_table_json(request, table_name):
 
 def get_user_table_visualize(request, table_name):
 	account = Account.objects.get(user=request.user)
-	return render_to_response(constants.TEMPLATE_PREFIX + "visualization/flu_home.html", {'account':account, 'table_name':table_name}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "visualization/flu_home.html", {'account':account, 'table_name':table_name}, context_instance=RequestContext(request))

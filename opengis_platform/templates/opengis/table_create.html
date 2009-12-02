@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "./opengis/table_base.html" %}
 {% load opengis_tags %}
 
 {% block head_content %}
@@ -16,6 +16,23 @@ $(document).ready(function() {
 		} else {
 			$(this).parent().find(".additional_input").html('');
 		}
+	});
+	
+	
+	$(".columns_form select").change(function() {
+		var data_type = $(this).find("option:selected").val();
+		alert(data_type);
+		
+		if(data_type == "table") {
+			
+		}
+	});
+	
+	
+	// Add new column click event
+	$(".columns_form a").click(function() {
+		$(".columns_form ol li:last").before("<li>New column</li>");
+		return false;
 	});
 });
 
@@ -47,8 +64,35 @@ function dosubmit() {
 
 {% endblock %}
 
-{% block body_content %}
-	<h2><a href="{% url opengis_list_my_table %}">Tables</a> - Create Table</h2>
+{% block table_body_content %}
+<div class="table_page_header"><h3>Create Table</h3></div>
+
+<div class="style_table_create">
+	<form action="." method="post" class="std_form">
+		<ul>
+			<li><label for="id_table_name">Table Name:</label>{{form.table_name}}</li>
+			<li><label for="id_description">Description:</label>{{form.description}}</li>
+			<li><label for="id_tags">Tags:</label>{{form.tags}}</li>
+		</ul>
+		<div class="columns_form">
+			<label class="columns_label">Columns:</label>
+			<ol>
+				<li class="caption"><div class="column_name">Column Name</div><div class="data_type">Data Type</div><div class="clear"></div></li>
+				<li><label>Column 1</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li><label>Column 2</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li><label>Column 3</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li><label>Column 4</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li><label>Column 5</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li><a href="#">Add new column</a></li>
+			</ol>
+		</div>
+		<button type="submit">Create Table</button>
+	</form>
+</div>
+
+
+
+<!--
 	<form action="." method="post">
 		<div><label>Table name:</label><input type="text" name="table_name" id="id_table_name" /></div>
 		<div class="column_input"><label>Column 1:</label><input type="text" name="column_name" /> <select name="column_type"><option></option>{% generate_data_type_list %}</select> <span class="additional_input"></span></div>
@@ -60,4 +104,5 @@ function dosubmit() {
 			<button type="submit" onclick="return dosubmit();">Submit</button>
 		</div>
 	</form>
+-->
 {% endblock %}

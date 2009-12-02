@@ -12,7 +12,8 @@ MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_NAME = 'opengis2'
-DATABASE_NAME = 'opengis_platform'
+#DATABASE_NAME = 'opengis_platform'
+DATABASE_NAME = 'opengis_dev'
 DATABASE_USER = 'panuta'
 DATABASE_PASSWORD = 'panuta'
 DATABASE_HOST = ''
@@ -24,6 +25,8 @@ SITE_ID = 1
 
 LANGUAGE_CODE = 'en-us'
 USE_I18N = True
+
+LOGIN_REDIRECT_URL = "/my/"
 
 MEDIA_ROOT = os.path.join(_base, "media") + "/"
 #MEDIA_ROOT = "/Users/apple/Projects/OpenGIS/Platform/opengis_platform/media/"
@@ -45,6 +48,14 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 	'opengis_platform.middleware.AJAXSimpleExceptionResponse',
 	'django.middleware.transaction.TransactionMiddleware',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+	'django.core.context_processors.request',
+	'django.core.context_processors.auth',
+	'django.core.context_processors.debug',
+	'django.core.context_processors.i18n',
+	'django.core.context_processors.media',
 )
 
 ROOT_URLCONF = 'opengis_platform.urls'
@@ -77,5 +88,6 @@ TEST_RUNNER = 'django.contrib.gis.tests.run_tests'
 POSTGIS_TEMPLATE = 'template_for_postgis'
 
 # OpenGIS
+OPENGIS_TEMPLATE_PREFIX = "./opengis/"
 TEMP_CSV_PATH = os.path.join(_base, "files/csv")
 

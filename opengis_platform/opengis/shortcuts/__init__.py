@@ -1,9 +1,9 @@
+from django.contrib.auth.models import User
+
 from opengis import errors
 from opengis.models import Account
 
-def check_user_auth(request):
-	username = request.REQUEST.get('username')
-	
+def check_user_auth(request, username):
 	if username:
 		# TODO Check authorization
 		user = User.objects.get(username=username)

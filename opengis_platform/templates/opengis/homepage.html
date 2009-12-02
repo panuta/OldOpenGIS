@@ -5,47 +5,43 @@
 <head>
 	<title>OpenGIS</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" >
+	<link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}/yui/reset-fonts.css">
+	
 	<link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}/css/styles.css">
 	
 	<script type="text/javascript" src="{{MEDIA_URL}}/scripts/jquery.min.js"></script>
 	
-	
 </head>
 <body>
+<div class="style_homepage">
 	<h1>OpenGIS</h1>
 	<div>
-		
-		
-		
-		
-		<div>
-		<div>
-			<div>
-				<h2>Sign Up</h2>
-				<form action="." method="post">
-
-				</form>
-			</div>
-			<div>
-				<h2>Login</h2>
-				<form action="." method="post">
-
-				</form>
-			</div>
+		<div class="register_form">
+			<h2>Sign Up</h2>
+			<form action="." method="post">
+				<ul>
+					<li><label>Username:</label> {{register_form.username}}</li>
+					<li><label>Email:</label> {{register_form.email}}</li>
+					<li><label>Password:</label> {{register_form.password1}}</li>
+					<li><label>Confirm Password:</label> {{register_form.password2}}</li>
+				</ul>
+				<button type="submit" name="submit_button" value="register">Register</button>
+			</form>
 		</div>
-
-
-
-		<h2>This is homepage, ya know?</h2>
-		<a href="/my/">My stuff</a>
+		<div class="login_form">
+			<h2>Login</h2>
+			<form action="." method="post">
+				<ul>
+					<li><label>Username:</label> {{login_form.username}}</li>
+					<li><label>Password:</label> {{login_form.password}}</li>
+				</ul>
+				<button type="submit" name="submit_button" value="login">Login</button>
+			</form>
+		</div>
+		<div class="clear"></div>
 		
-		
-		
-		
+		<div class="footer">2009</div>
 	</div>
+</div>
 </body>
 </html>
-
-
-
-

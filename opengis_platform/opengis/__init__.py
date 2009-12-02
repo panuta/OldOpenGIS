@@ -29,8 +29,8 @@ def _create_model(user_table, user_table_columns):
 		if column.data_type == sql.TYPE_CHARACTER:
 			attrs[column.physical_column_name] = models.CharField(max_length=sql.DEFAULT_CHARACTER_LENGTH, null=True)
 			
-		elif column.data_type == sql.TYPE_INTEGER:
-			attrs[column.physical_column_name] = models.IntegerField(null=True)
+		elif column.data_type == sql.TYPE_NUMBER:
+			attrs[column.physical_column_name] = models.FloatField(null=True)
 			
 		elif column.data_type == sql.TYPE_DATETIME:
 			attrs[column.physical_column_name] = models.DateTimeField(null=True)
@@ -47,10 +47,7 @@ def _create_model(user_table, user_table_columns):
 		elif column.data_type == sql.TYPE_LOCATION:
 			attrs[column.physical_column_name] = models.PointField(null=True)
 		
-		elif column.data_type == sql.TYPE_USER:
-			attrs[column.physical_column_name] = models.ForeignKey(User, null=True)
-		
-		elif column.data_type == sql.TYPE_MY_TABLE:
+		elif column.data_type == sql.TYPE_USER_TABLE:
 			my_table = UserTable.objects.get(pk=column.related_table)
 			my_table_columns = UserTableColumn.objects.filter(table=user_table)
 			
@@ -61,7 +58,7 @@ def _create_model(user_table, user_table_columns):
 	
 	attrs['objects'] = models.GeoManager()
 	
-	model_class = type(smart_str(user_table.table_class_name), (models.Model,), attrs)
+	model_class = type(str(user_table.table_class_name), (models.Model,), attrs) # user_table.table_class_name return as 'unicode', convert to string
 
 	return model_class
 
@@ -112,7 +109,7 @@ class UserTableColumnManager(object):
 				if not BUILT_IN_TABLE_CHAIN_STARTED:
 					column_info = column_mapping[hierarchy]
 				
-					if sql.TYPE_MY_TABLE == column_info.data_type:
+					if sql.TYPE_USER_TABLE == column_info.data_type:
 						if column_info.related_table not in self.columns_cache: # Not in cache
 							column_mapping = dict()
 							for table_column in UserTableColumn.objects.filter(table=UserTable(pk=column_info.related_table)):

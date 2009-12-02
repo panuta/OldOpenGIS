@@ -1,12 +1,14 @@
-{% extends "base.html" %}
+{% extends "./opengis/base.html" %}
 
 {% block body_content %}
-<h2>Registration Form</h2>
-<form action="." method="post">
-	<div><label for="id_username">Username: </label>{{form.username}}</div>
-	<div><label for="id_email">Email: </label>{{form.email}}</div>
-	<div><label for="id_password1">Password: </label>{{form.password1}}</div>
-	<div><label for="id_password2">Confirm Password: </label>{{form.password2}}</div>
-	<div><button type="submit">Submit</button></div>
+<h2>Sign Up Form</h2>
+<form action="." method="post" class="std_form">
+	<ul>
+		<li><label for="id_username">Username:</label>{{form.username}}</li>
+		<li><label for="id_email">Email:</label>{{form.email}}</li>
+		<li><label for="id_password1">Password:</label>{{form.password1}}</li>
+		<li><label for="id_password2">Confirm Password:</label>{{form.password2}}</li>
+	</ul>
+	<button type="submit">Submit</button>
 </form>
 {% endblock %}

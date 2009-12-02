@@ -28,28 +28,16 @@ class ThailandRegion(models.Model):
 		name = 'Thailand Region'
 		columns = {
 			'id':{
-				'name':'ID',
-				'physical_name':'id',
-				'type':sql.TYPE_INTEGER,
-				'related_table':'',
+				'name':'ID','physical_name':'id','type':sql.TYPE_SERIAL,'related_table':'',
 			},
 			'name':{
-				'name':'Name',
-				'physical_name':'name',
-				'type':sql.TYPE_CHARACTER,
-				'related_table':'',
+				'name':'Name','physical_name':'name','type':sql.TYPE_CHARACTER,'related_table':'',
 			},
 			'name_th':{
-				'name':'Name in Thai',
-				'physical_name':'name_th',
-				'type':sql.TYPE_CHARACTER,
-				'related_table':'',
+				'name':'Name in Thai','physical_name':'name_th','type':sql.TYPE_CHARACTER,'related_table':'',
 			},
 			'region':{
-				'name':'Region',
-				'physical_name':'region',
-				'type':sql.TYPE_REGION,
-				'related_table':'',
+				'name':'Region','physical_name':'region','type':sql.TYPE_REGION,'related_table':'',
 			},
 		}
 		
@@ -58,7 +46,7 @@ class ThailandProvince(models.Model):
 	name = models.CharField(max_length=256)
 	name_th = models.CharField(max_length=256)
 	region = models.MultiPolygonField(null=True)
-	# region_simple = models.MultiPolygonField(null=True)
+	region_simple = models.MultiPolygonField(null=True)
 	location = models.PointField(null=True)
 	in_region = models.ForeignKey(ThailandRegion, null=True)
 	objects = models.GeoManager()
@@ -72,40 +60,25 @@ class ThailandProvince(models.Model):
 		name = 'Thailand Province'
 		columns = {
 			'id':{
-				'name':'ID',
-				'physical_name':'id',
-				'type':sql.TYPE_INTEGER,
-				'related_table':'',
+				'name':'ID','physical_name':'id','type':sql.TYPE_SERIAL,'related_table':'',
 			},
 			'name':{
-				'name':'Name',
-				'physical_name':'name',
-				'type':sql.TYPE_CHARACTER,
-				'related_table':'',
+				'name':'Name','physical_name':'name','type':sql.TYPE_CHARACTER,'related_table':'',
 			},
 			'name_th':{
-				'name':'Name in Thai',
-				'physical_name':'name_th',
-				'type':sql.TYPE_CHARACTER,
-				'related_table':'',
+				'name':'Name in Thai','physical_name':'name_th','type':sql.TYPE_CHARACTER,'related_table':'',
 			},
 			'region':{
-				'name':'Region',
-				'physical_name':'region',
-				'type':sql.TYPE_REGION,
-				'related_table':'',
+				'name':'Region','physical_name':'region','type':sql.TYPE_REGION,'related_table':'',
+			},
+			'region_simple':{
+				'name':'Simplified Region','physical_name':'region_simple','type':sql.TYPE_REGION,'related_table':'',
 			},
 			'location':{
-				'name':'Location',
-				'physical_name':'location',
-				'type':sql.TYPE_LOCATION,
-				'related_table':'',
+				'name':'Location','physical_name':'location','type':sql.TYPE_LOCATION,'related_table':'',
 			},
 			'in_region':{
-				'name':'In Region',
-				'physical_name':'in_region',
-				'type':sql.TYPE_BUILT_IN_TABLE,
-				'related_table':'thailand_region',
+				'name':'In Region','physical_name':'in_region','type':sql.TYPE_BUILT_IN_TABLE,'related_table':'thailand_region',
 			},
 		}
 
@@ -124,6 +97,8 @@ class UserTable(models.Model):
 	table_class_name = models.CharField(max_length=512, null=True)
 	description = models.CharField(max_length=512, null=True)
 	share_level = models.IntegerField(default=0) # 0-Private, 9-Public
+	created = models.DateTimeField(auto_now_add=True)
+	modified = models.DateTimeField(auto_now=True)
 	
 	def __unicode__(self):
 		return self.table_name
@@ -150,6 +125,8 @@ class UserQuery(models.Model):
 	starter_table = models.CharField(max_length=128)
 	is_distinct = models.BooleanField(default=False)
 	result_limit = models.IntegerField(default=0, null=True)
+	created = models.DateTimeField(auto_now_add=True)
+	modified = models.DateTimeField(auto_now=True)
 
 class UserQueryDisplayColumn(models.Model):
 	query = models.ForeignKey(UserQuery)

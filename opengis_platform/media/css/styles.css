@@ -1,0 +1,111 @@
+.clear {clear:both;margin:0;padding:0;height:0;width:0;}
+
+html,body {background-color:#555;}
+
+/* General Styles */
+.base_page_message {font-size:123.1%;text-align:center;margin:20px 0px;}
+h2 {font-size:153.9%;font-weight:bold;margin-bottom:10px;color:#333;}
+
+a:link, a:visited, a:active {color:#369;}
+a:hover {background-color:#369;color:#FFF;}
+
+/* Standard Form Styles */
+.std_form ul {margin:15px 0px;}
+.std_form ul li {margin-bottom:15px;}
+.std_form ul li label {width:140px;display:block;float:left;font-size:108%;margin-left:5px;}
+.std_form button {margin-left:140px;}
+
+/* Homepage */
+.style_homepage {width:975px;margin:0px auto;}
+.style_homepage h1 {font-size:300%;font-weight:bold;padding:15px 0px;text-align:center;color:#FFC;}
+.style_homepage .register_form {background-color:#FFF;border:5px solid #CCC;float:left;width:440px;padding:12px;}
+.style_homepage .login_form {background-color:#FFF;border:5px solid #CCC;float:right;width:440px;padding:12px;}
+.style_homepage h2 {font-size:167%;font-weight:bold;color:#C63;margin-bottom:10px;}
+.style_homepage form {margin-bottom:15px;}
+.style_homepage form li {margin-bottom:12px;}
+.style_homepage form li label {width:140px;float:left;display:block;font-size:108%;}
+.style_homepage form button {margin-left:140px;}
+.style_homepage .footer {text-align:center;font-size:108%;color:white;margin-top:20px;padding-top:10px;border-top:1px solid #999;}
+
+/* Base Template */
+.style_base .header {height:50px;}
+.style_base .header h1 {padding:8px 10px;}
+.style_base .header h1 a:link, .style_base .header h1 a:visited, .style_base .header h1 a:active {font-size:197%;font-weight:bold;color:#FFC;text-decoration:none;}
+.style_base .header h1 a:hover {background:none;color:#FFC;}
+.style_base .header .account_panel {color:#999;margin:10px 20px;float:right;font-size:123.1%;}
+.style_base .header .account_panel a:link, .style_base .header .account_panel a:visited, .style_base .header .account_panel a:active {color:#9CF;padding:0px 5px;}
+.style_base .header .account_panel a:hover {background-color:#9CF;color:black;text-decoration:none;}
+.style_base .header .account_panel a.username:link,.style_base .header .account_panel a.username:visited,.style_base .header .account_panel a.username:active {color:#FFC;text-decoration:none;}
+.style_base .header .account_panel a.username:hover {background-color:#FFC;color:#000;}
+.style_base .body_content {border-top:2px solid #999;background-color:white;padding:10px 20px;}
+.style_base .head_nav {font-size:153.9%;font-weight:bold;margin-bottom:10px;color:#999;border-bottom:2px solid #CCC;padding-bottom:10px;}
+.style_base .head_nav a:link,.style_base .head_nav a:visited,.style_base .head_nav a:active {padding:0px 8px;}
+.style_base .head_nav em {color:#096;padding:0px 8px;}
+.style_base .footer {text-align:center;font-size:108%;color:white;padding-top:10px;border-top:1px solid #999;}
+
+/* Share - Profile, Tables, Queries */
+.share_home ol li.item {border-bottom:1px solid #CCC;margin-bottom:15px;padding:0px 0px 10px 5px;}
+.share_home ol h4 {font-size:123.1%;font-weight:bold;margin-bottom:8px;}
+.share_home ol .description {font-size:108%;color:#666;margin-bottom:8px;}
+.share_home ol .tags {margin-bottom:5px;}
+.share_home .no_list_item {color:#888;font-size:108%;margin-bottom:20px;}
+
+.share_home .action_panel {margin:15px 0px 3px;}
+.share_home .action_panel li {cursor:pointer;display:inline-block;display:-moz-inline-stack;*display:inline;list-style:none;zoom:1;margin-right:10px;}
+.share_home .action_panel a:link, .share_home .action_panel a:visited, .share_home .action_panel a:active {text-decoration:none;border:1px solid #CCC;padding:3px 10px;}
+.share_home .action_panel .warning a:link,.share_home .action_panel .warning a:visited,.share_home .action_panel .warning a:active {color:#F33 !important;}
+.share_home .action_panel .warning a:hover {color:#F99 !important;}
+.share_home .action_panel a.expand_button:link, .share_home .action_panel a.expand_button:visited, .share_home .action_panel a.expand_button:active {border:none !important;outline:none;padding:3px 5px;}
+
+.share_home .top_actions {margin-bottom:20px;}
+.share_home .top_actions a:link,.share_home .top_actions a:visited,.share_home .top_actions a:active {font-size:123.1%;}
+.share_home {}
+
+/* Profile */
+.style_profile .list_header {margin:20px 0px 8px;}
+.style_profile .list_header h3 {font-size:138.5%;font-weight:bold;color:#C63;display:inline;}
+.style_profile .list_header span {margin-left:10px;}
+
+/* User Tables */
+/* User Queries */
+
+
+/* Table Base Template */
+.style_table_base .table_page_header {font-size:138.5%;color:#999;border-bottom:1px solid #CCC;padding-bottom:5px;margin-bottom:10px;}
+.style_table_base .table_page_header h3 {color:#C63;display:inline;font-weight:bold;}
+
+.style_table_base .table_page_nav {margin:5px 0px;border-bottom:1px solid #CCC;padding-bottom:5px;}
+.style_table_base .table_page_nav li {cursor:pointer;display:inline-block;display:-moz-inline-stack;*display:inline;list-style:none;zoom:1;margin-right:20px;}
+.style_table_base .table_page_nav li a:link,.style_table_base .table_page_nav li a:visited,.style_table_base .table_page_nav li a:active {font-size:108%;}
+.style_table_base .table_page_nav li a.warning:link,.style_table_base .table_page_nav li a.warning:visited,.style_table_base .table_page_nav li a.warning:active {color:#F33 !important;}
+.style_table_base .table_page_nav li a.warning:hover {color:#F99 !important;}
+
+.style_table_base .no_table_data {font-size:123.1%;color:#666;margin:15px 0px;font-style:italic;}
+
+.style_table_view table.view_data {border:1px solid #CCC;margin:15px 0px;}
+.style_table_view table.view_data th {border:1px solid #CCC;background-color:#EEE;padding:5px 10px;}
+.style_table_view table.view_data td {border:1px solid #CCC;padding:5px 10px;}
+
+.style_table_import {margin-top:15px;}
+.style_table_import .instruction {border:1px solid #CCC;background-color:#FFC;padding:5px 10px;margin-bottom:20px;}
+.style_table_import form {margin-bottom:20px;}
+
+.style_table_input {}
+
+.style_table_create form {margin-bottom:20px;}
+.style_table_create form button {margin-top:10px;margin-left:0px;}
+
+.style_table_create .columns_form label.columns_label {font-size:108%;margin:0px 0px 5px 5px;}
+.style_table_create .columns_form ol li {padding-bottom:15px;}
+.style_table_create .columns_form ol li.caption {padding-bottom:10px;color:#C63;}
+.style_table_create .columns_form ol li .column_name {margin-left:130px;width:165px;float:left;}
+.style_table_create .columns_form ol li .data_type {width:140px;float:left;}
+.style_table_create .columns_form ol li label {background-color:#999;color:#FFF;float:left;width:100px;padding:5px 10px;}
+.style_table_create .columns_form ol li input {margin:0px 20px 0px 10px;float:left;width:140px;}
+.style_table_create .columns_form ol li select {}
+
+
+
+
+
+

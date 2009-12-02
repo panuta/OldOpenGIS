@@ -1,11 +1,34 @@
-{% extends "base.html" %}
+{% extends "./opengis/base.html" %}
 
 {% block body_content %}
-	<h2>Table List</h2>
-	<div><a href="{% url opengis_create_my_table %}">Create a new table</a> | <a href="{% url opengis_build_my_query %}">Query Builder</a></div>
-	<ul>
-	{% for user_table in user_tables %}
-		<li><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a></li>
-	{% endfor %}
-	</ul>
+<div class="share_home style_tables">
+	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% url opengis_view_my_home %}">Profile</a> | <em>Tables</em> | <a href="{% url opengis_list_my_query %}">Queries</a></div>
+	<div class="top_actions">
+		<ul>
+			<li><a href="{% url opengis_create_my_table %}">Create new table</a></li>
+		</ul>
+	</div>
+	<div>
+		{% if not user_tables %}
+			<div class="no_list_item">No item found</div>
+		{% else %}
+			<ol>
+				{% for table in user_tables %}
+					<li class="item">
+						<h4><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a></h4>
+						<p class="description">{{table.description|default:'No description'}}</p>
+						<p class="tags">tag1 tag2 tag3 tag4</p>
+						<div class="action_panel">
+							<ul>
+								<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
+								<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
+								<li class="warning"><a href="{% url opengis_delete_my_table table.table_name %}">Delete</a></li>
+							</ul>
+						</div>
+					</li>
+				{% endfor %}
+			</ol>
+		{% endif %}
+	</div>
+</div>
 {% endblock %}

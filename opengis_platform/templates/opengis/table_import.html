@@ -1,11 +1,17 @@
-{% extends "base.html" %}
+{% extends "./opengis/table_base.html" %}
 
-{% block body_content %}
-Import data
-<form action="." method="POST" enctype="multipart/form-data">
-	{{form.errors}}
-	{{form.source_type}}
-	{{form.file}}
-	<button type="submit">Submit</button>
-</form>
+{% block table_body_content %}
+<div class="table_page_header">Table Name: <h3><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a> &#155; Import Data</h3></div>
+
+<div class="style_table_import">
+	<p class="instruction">CSV ONLY! UNDERSTAND?</p>
+	<form action="." method="POST" enctype="multipart/form-data" class="std_form">
+		{{form.errors}}
+		<ul>
+			<li><label for="id_source_type">Source Format:</label>{{form.source_type}}</li>
+			<li><label for="id_file">Upload File:</label>{{form.file}}</li>
+		</ul>
+		<button type="submit">Submit</button>
+	</form>
+</div>
 {% endblock %}

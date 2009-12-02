@@ -1,11 +1,35 @@
-{% extends "base.html" %}
+{% extends "./opengis/base.html" %}
+{% load opengis_tags %}
 
 {% block body_content %}
-	<h2>Query List</h2>
-	<div><a href="{% url opengis_build_my_query %}">Query Builder</a></div>
-	<ul>
-	{% for user_query in user_queries %}
-		<li><a href="{% url opengis_view_my_query user_query.query_name %}">{{user_query.query_name}}</a></li>
-	{% endfor %}
-	</ul>
+<div class="share_home style_queries">
+	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% my_url opengis_view_my_home opengis_view_user_home %}">Profile</a> | <a href="{% my_url opengis_list_my_table opengis_list_user_table %}">Tables</a> | <em>Queries</em></div>
+	<div class="top_actions">
+		<ul>
+			<li><a href="{% url opengis_create_my_query %}">Create new query</a></li>
+		</ul>
+	</div>
+	<div>
+		{% if not user_queries %}
+			<div class="no_list_item">No item found</div>
+		{% else %}
+			<ol class="query_list">
+				{% for query in user_queries %}
+					<li class="item">
+						<h4><a href="{% url opengis_view_my_query query.query_name %}">{{query.query_name}}</a></h4>
+						<p class="description">{{query.description|default:'No description'}}</p>
+						<div class="action_panel">
+							<ul>
+								<li><a href="{% url opengis_visualize_my_query query.query_name %}">Visualize</a></li>
+								<li><a href="#">Get Links</a></li>
+								<li><a href="{% url opengis_edit_my_query query.query_name %}">Edit Table</a></li>
+								<li class="warning"><a href="{% url opengis_delete_my_query query.query_name %}">Delete</a></li>
+							</ul>
+						</div>
+					</li>
+				{% endfor %}
+			</ol>
+		{% endif %}
+	</div>
+</div>
 {% endblock %}
