@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<title>OpenGIS</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" >
+	<link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}/yui/reset-fonts.css">
+	<link type="text/css" rel="stylesheet" href="{{MEDIA_URL}}/css/styles.css">
+	
+	<script type="text/javascript" src="{{MEDIA_URL}}/scripts/jquery.min.js"></script>
+	{% block head_content %}{% endblock %}
+</head>
+<body>
+	<div class="style_base">
+		<div class="header">
+			{% if user.is_authenticated %}<div class="account_panel">Login as <a href="{% url opengis_view_my_home %}" class="username">{{user.username}}</a> | <a href="/accounts/logout/">Logout</a></div>{% else %}<div class="account_panel"><a href="/accounts/login/">Login</a> | <a href="/accounts/register/">Sign Up</a></div>{% endif %}
+			<h1><a href="/">OpenGIS</a></h1>
+		</div>
+		<div class="body_content">
+			{% block body_content %}{% endblock %}
+		</div>
+		<div class="footer">2009</div>
+	</div>
+</body>
+</html>
