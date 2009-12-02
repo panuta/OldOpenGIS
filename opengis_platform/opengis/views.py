@@ -112,6 +112,8 @@ def create_user_table(request):
 	
 	if request.method == "POST":
 		table_name = request.POST.get('table_name')
+		description = request.POST.get('description')
+		tags = request.POST.get('tags')
 		
 		# TODO Check table name duplication
 		
@@ -122,6 +124,7 @@ def create_user_table(request):
 		
 		column_count = 1 # Did not use enumerate because this way it will not count if column format in invalid
 		for raw_column in raw_columns:
+			
 			splited = raw_column.split(':')
 			
 			if len(splited) < 2: continue
@@ -155,7 +158,7 @@ def create_user_table(request):
 				column_count = column_count + 1
 		
 		# Create table metadata
-		user_table = UserTable.objects.create(account=account, table_name=table_name)
+		user_table = UserTable.objects.create(account=account, table_name=table_name, description=description)
 		user_table.table_class_name = constants.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
 		user_table.save()
 		

@@ -102,9 +102,9 @@ a:hover {background-color:#369;color:#FFF;}
 .style_table_create .columns_form ol li .data_type {width:140px;float:left;}
 .style_table_create .columns_form ol li label {background-color:#999;color:#FFF;float:left;width:100px;padding:5px 10px;}
 .style_table_create .columns_form ol li input {margin:0px 20px 0px 10px;float:left;width:140px;}
-.style_table_create .columns_form ol li select {}
+.style_table_create .columns_form ol li select.data_type {float:left;}
 
-
+.style_table_create .columns_form .more_inputs {float:left;margin-left:10px;}
 
 
 

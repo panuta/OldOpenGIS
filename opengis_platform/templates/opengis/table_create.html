@@ -21,10 +21,15 @@ $(document).ready(function() {
 	
 	$(".columns_form select").change(function() {
 		var data_type = $(this).find("option:selected").val();
-		alert(data_type);
 		
-		if(data_type == "table") {
+		if(data_type == "datetime") {
+			$(this).parent().find(".more_inputs").html('<select class="related"><option></option><option value="datetime">Date and Time</option><option value="date">Date only</option><option value="time">Time only</option></select>');
 			
+		} else if(data_type == "table") {
+			
+			// more_inputs
+		} else {
+			$(this).parent().find(".more_inputs").html('');
 		}
 	});
 	
@@ -34,13 +39,34 @@ $(document).ready(function() {
 		$(".columns_form ol li:last").before("<li>New column</li>");
 		return false;
 	});
+	
+	$("form button").click(function() {
+		dosubmit();
+		return true;
+	});
 });
 
 function dosubmit() {
-	$("form .column_input").each(function() {
-		var data_type = $(this).find("select[name='column_type'] option:selected").val();
+	$(".columns_form li.input").each(function() {
+		var data_type = $(this).find("select.data_type option:selected").val();
 		
 		if(data_type != "") {
+			var column_param = $(this).find("input").val();
+			
+			if(data_type == "datetime") {
+				var datetime_type = $(this).find("select.related option:selected").val();
+				column_param = column_param + ":" + datetime_type;
+				
+			} else if(data_type == "table") {
+				
+			} else {
+				column_param = column_param + ":" + data_type;
+			}
+			
+			$("form").append('<input type="hidden" name="columns" value="' + column_param + '"/>');
+			
+			
+			/*
 			var column_text = $(this).find("input[name='column_name']").val() + ":" + data_type;
 
 			if(data_type == "mine") {
@@ -53,15 +79,15 @@ function dosubmit() {
 				if(related_table == "") return;
 				column_text += ":related--" + related_table;
 			}
-
-			$("form").append('<input type="hidden" name="columns" value="' + column_text + '"/>');
+			*/
+			
+			
+			
+			
 		}
 	});
-	
-	return true;
 }
 </script>
-
 {% endblock %}
 
 {% block table_body_content %}
@@ -78,11 +104,11 @@ function dosubmit() {
 			<label class="columns_label">Columns:</label>
 			<ol>
 				<li class="caption"><div class="column_name">Column Name</div><div class="data_type">Data Type</div><div class="clear"></div></li>
-				<li><label>Column 1</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
-				<li><label>Column 2</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
-				<li><label>Column 3</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
-				<li><label>Column 4</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
-				<li><label>Column 5</label><input type="text" /><select><option></option>{% generate_data_type_list %}</select><div class="clear"></div></li>
+				<li class="input"><label>Column 1</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
+				<li class="input"><label>Column 2</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
+				<li class="input"><label>Column 3</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
+				<li class="input"><label>Column 4</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
+				<li class="input"><label>Column 5</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list %}</select><div class="more_inputs"></div><div class="clear"></div></li>
 				<li><a href="#">Add new column</a></li>
 			</ol>
 		</div>
