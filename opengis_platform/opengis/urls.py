@@ -40,7 +40,7 @@ urlpatterns = patterns('opengis.views',
 	# Internal Ajax Call #
 	url(r'^ajax/internal/tables/list/$', 'ajax_list_user_table', name="opengis_ajax_list_user_table"),
 	
-	
+	url(r'^ajax/internal/table/(?P<table_name>[^\/]+)/add/$', 'ajax_input_user_table', name="opengis_ajax_input_user_table"),
 	
 	
 	

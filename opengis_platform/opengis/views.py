@@ -195,6 +195,9 @@ def create_user_table(request):
 	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_create.html", {'account':account, 'form':form, 'user_tables':user_tables}, context_instance=RequestContext(request))
 
+def ajax_input_user_table(request):
+	pass
+
 @login_required
 def edit_user_table(request):
 	pass
