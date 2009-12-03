@@ -46,34 +46,49 @@ def my_url(parser, token):
 		params = params.split(":")
 		return MyURLNode(my_url_name, user_url_name, params)
 
-"""
-@register.simple_tag
-def unicode_url(url_name, params):
-	
-	from django.utils.encoding import force_unicode, iri_to_uri
-	from django.utils.http import urlquote
-
-	table.table_url_name = iri_to_uri(urlquote(table.table_url_name))
-	
-	return reverse(url_name, args=())
-	
-	return getattr(data_row, column_name)
-"""
-
 @register.simple_tag
 def print_value(data_row, column_name):
 	return getattr(data_row, column_name)
 
+@register.simple_tag
+def print_share_level_html(MEDIA_URL, level_number):
+	if level_number == 9: return '<img src="' + MEDIA_URL + '/images/share_public.png" title="Public Table"/>'
+	return '<img src="' + MEDIA_URL + '/images/icon_blank.png" title="Unknown"/>'
+
+@register.simple_tag
+def print_column_data_type(data_type):
+	if data_type == sql.TYPE_CHARACTER: return "Character"
+	elif data_type == sql.TYPE_NUMBER: return "Number"
+	elif data_type == sql.TYPE_DATETIME: return "Date/Time"
+	elif data_type == sql.TYPE_DATE: return "Date"
+	elif data_type == sql.TYPE_TIME: return "Time"
+	elif data_type == sql.TYPE_REGION: return "Region"
+	elif data_type == sql.TYPE_LOCATION: return "Location"
+	elif data_type == sql.TYPE_USER_TABLE: return "Table"
+	elif data_type == sql.TYPE_BUILT_IN_TABLE: return "Built-in Table"
+	return "Unknown"
+
 # CREATE TABLE
 @register.simple_tag
-def generate_data_type_list():
-	return '<option value="char">Character</option>' \
-		+ '<option value="number">Number</option>' \
-		+ '<option value="datetime">Date/Time</option>' \
-		+ '<option value="region">Region</option>' \
-		+ '<option value="location">Location</option>' \
-		+ '<option value="builtin">Other data</option>' \
-		+ '<option value="table">Table</option>'
+def generate_data_type_list(type_value):
+	if not type_value:
+		return '<option value="char">Character</option>' \
+			+ '<option value="number">Number</option>' \
+			+ '<option value="datetime">Date/Time</option>' \
+			+ '<option value="region">Region</option>' \
+			+ '<option value="location">Location</option>' \
+			+ '<option value="builtin">Other data</option>' \
+			+ '<option value="table">Table</option>'
+	else:
+		html = '<option value="char" ' + ('selected="selected"' if type_value==sql.TYPE_CHARACTER else '') + '>Character</option>'
+		html += '<option value="number" ' + ('selected="selected"' if type_value==sql.TYPE_NUMBER else '') + '>Number</option>'
+		html += '<option value="datetime" ' + ('selected="selected"' if type_value in (sql.TYPE_DATETIME,sql.TYPE_DATE,sql.TYPE_TIME) else '') + '>Date/Time</option>'
+		html += '<option value="region" ' + ('selected="selected"' if type_value==sql.TYPE_REGION else '') + '>Region</option>'
+		html += '<option value="location" ' + ('selected="selected"' if type_value==sql.TYPE_LOCATION else '') + '>Location</option>'
+		html += '<option value="builtin" ' + ('selected="selected"' if type_value==sql.TYPE_BUILT_IN_TABLE else '') + '>Other data</option>'
+		html += '<option value="table" ' + ('selected="selected"' if type_value==sql.TYPE_USER_TABLE else '') + '>Table</option>'
+		
+		return html
 
 @register.simple_tag
 def generate_user_table_list(user_tables):

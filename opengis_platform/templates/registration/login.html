@@ -1,13 +1,13 @@
 {% extends "./opengis/base.html" %}
 
 {% block body_content %}
-<h2 class="color">Login Form</h2>
+<h1>Login Form</h1>
 <form action="." method="post" class="std_form">
 	<ul>
 		<li><label for="id_username">Username:</label>{{form.username}}</li>
 		<li><label for="id_password">Password:</label>{{form.password}}</li>
 	</ul>
-	<button type="submit">Submit</button>
+	<div class="button_panel"><button type="submit">Submit</button></div>
 	{% if next %}<input type="hidden" name="next" value="{{next}}" />{% else %}<input type="hidden" name="next" value="" />{% endif %}
 </form>
 {% endblock %}

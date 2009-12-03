@@ -103,9 +103,10 @@ function dosubmit() {
 {% endblock %}
 
 {% block sub_body_content %}
-<div class="page_header"><h2>Create New Table</h2></div>
+<div class="page_header">Table Name: <h2><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a> &#155; Edit Table</h2></div>
 
 <div class="style_table_create">
+	{{form.errors}}
 	<form action="." method="post" class="std_form">
 		<ul class="form">
 			<li class="long_textbox"><label for="id_table_name">Table Name:</label>{{form.table_name}}{{form.errors.table_name}}</li>
@@ -115,35 +116,25 @@ function dosubmit() {
 		</ul>
 		<div class="columns_form">
 			{% if columns_errors %}<ul class="errorlist">{% for error in columns_errors %}<li>{{error}}</li>{% endfor %}</ul>{% endif %}
-			{% if not columns %}
 			<ol>
 				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
-				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
-				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
-				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
-				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
-				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
+				{% for column in user_table.columns %}
+				<li class="input"><label>Column</label><input type="text" value="{{column.column_name}}"/><div class="data_type">{% print_column_data_type column.data_type %}</div><div class="action"><a href="#">Delete</a></div><div class="error"></div><div class="clear"></div></li>
+				{% endfor %}
+				{% for column in columns %}
+					<!-- New Columns -->
+				{% endfor %}
 				<li><a href="#" id="add_new_column">Add new column</a></li>
 			</ol>
-			{% else %}
-			<ol>
-				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
-				{% for column in columns %}
-				<li class="input"><label>Column</label><input type="text" value="{{column.name}}"/><select class="data_type"><option></option>{% generate_data_type_list column.type %}</select><div class="more_inputs"></div><div class="error">{{column.error}}</div><div class="clear"></div></li>
-				{% endfor %}
-				<li><a href="#">Add new column</a></li>
-			</ol>
-			{% endif %}
 		</div>
-		<ul class="form display_column_panel" {% if not columns %}style="display:none;"{% endif %}>
-			<li>
-				<label for="id_display_column_selector">Display Column:</label>
-				<select id="id_display_column_selector">{% for column in columns %}<option {% ifequal column.name request.POST.display_column %}selected="selected"{% endifequal %}>{{column.name}}</option>{% endfor %}</select>
-				{{form.display_column}}
-				<div class="comment">* Value from which column that will be used in a list when editing</div>{{form.errors.display_column}}
-			</li>
+		<ul class="form display_column_panel">
+			<li><label for="id_display_column_selector">Display Column:</label><select id="id_display_column_selector">{% for column in user_table.columns %}<option {% ifequal column.physical_column_name user_table.display_column %}selected="selected"{% endifequal %}>{{column.column_name}}</option>{% endfor %}</select>{{form.display_column}}<div class="comment">* Value from which column that will be used in a list when editing</div>{{form.errors.display_column}}</li>
 		</ul>
-		<div class="button_panel"><button type="submit">Create Table</button></div>
+		<div class="button_panel">
+			{{form.existing_table_id}}
+			<button type="submit">Update Table</button>
+			<button type="button">Cancel</button>
+		</div>
 	</form>
 </div>
 {% endblock %}

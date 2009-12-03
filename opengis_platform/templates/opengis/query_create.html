@@ -1,0 +1,102 @@
+{% extends "./opengis/content_base.html" %}
+{% load opengis_tags %}
+
+{% block head_content %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$("select.starter_selector").change(function() {
+		var select_object = $(this);
+		var table_type = $(this).find("option:selected").val();
+		
+		$(this).parent().find("select.table_selector").remove();
+		
+		if(table_type == "mine") {
+			$.getJSON("{% url opengis_ajax_list_user_table %}", function(data) {
+				var list_html = '';
+				for(var i in data.tables) {
+					list_html += '<option value="' + data.tables[i].id + '">' + data.tables[i].name + '</option>';
+				}
+				
+				select_object.parent().append('<select class="table_selector"><option></option>' + list_html + '</select>');
+				
+				select_object.parent().find("select.table_selector").change(function() {
+					loadMasterTables($(this).find("option:selected").val());
+				});
+			});
+		
+		} else if(table_type == "others") {
+			
+			
+			
+		} else if(table_type == "builtin") {
+			$(this).parent().append('<select class="table_selector"><option></option>{% generate_built_in_table_list %}</select>');
+			
+			$(this).parent().find("select.table_selector").change(function() {
+				loadMasterTables($(this).find("option:selected").val());
+			});
+		}
+	
+	});
+});
+
+function loadMasterTables(table_code) {
+	$.getJSON("{% url opengis_ajax_get_table_columns %}?table_code=" + table_code, function(data) {
+		$("#layer0").html(drawTable(data.columns));
+		
+		// TODO: Clear other layers
+		
+		console.log(data);
+	});
+}
+
+function loadChildTables(table_code) {
+	
+}
+
+function getTableColumns(table_code) {
+	
+}
+
+function drawTable(columns) {
+	var html = '<table><tr><th>Table Name</th></tr><tr><td><input type="checkbox"/> Column 1</td></tr><tr><td>Column 2</td></tr><tr><td>Column 3</td></tr></table>';
+	
+	return html;
+}
+</script>
+{% endblock %}
+
+{% block sub_body_content %}
+<div class="page_header"><h2>Create New Query</h2></div>
+
+<div class="style_query_create">
+	<form action="." method="post" class="std_form">
+		<ul>
+			<li class="long_textbox"><label for="id_query_name">Query Name:</label>{{form.query_name}}</li>
+			<li class="medium_textarea"><label for="id_description">Description:</label>{{form.description}}</li>
+		</ul>
+		<div class="query_builder">
+			<label class="caption">Query Builder</label>
+			<div class="starter_table">
+				<label>Select Table:</label>
+				<select class="starter_selector"><option></option><option value="mine">My Tables</option><option value="others">User's Table</option><option value="builtin">Built-in Table</option></select>
+			</div>
+			<div class="tables">
+				<div id="layer0">
+					<table>
+						<tr><th>Table Name</th></tr>
+						<tr><td><a href="#">Aggregate</a></td></tr>
+						<tr><td><input type="checkbox"/> <img src="{{MEDIA_URL}}/images/filter_none.gif"/> Column 1<span>[ Data Type ]</span></td></tr>
+						<tr><td><input type="checkbox"/> <img src="{{MEDIA_URL}}/images/filter.gif"/> Column 2</td></tr>
+						<tr><td><input type="checkbox"/> <img src="{{MEDIA_URL}}/images/filter_none.gif"/> Column 3</td></tr>
+					</table>
+				</div>
+			</div>
+		</div>
+		
+		<div class="button_panel">
+			<button type="submit">Save Query</button>
+			<a href="#">Preview</a>
+		</div>
+	</form>
+</div>
+{% endblock %}

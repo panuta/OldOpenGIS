@@ -97,6 +97,7 @@ class UserTable(models.Model):
 	table_class_name = models.CharField(max_length=512, null=True)
 	description = models.CharField(max_length=512, null=True)
 	share_level = models.IntegerField(default=0) # 0-Private, 9-Public
+	display_column = models.CharField(max_length=512) # Store as physical column name
 	created = models.DateTimeField(auto_now_add=True)
 	modified = models.DateTimeField(auto_now=True)
 	
@@ -109,6 +110,8 @@ class UserTableColumn(models.Model):
 	physical_column_name = models.CharField(max_length=512, null=True)
 	data_type = models.IntegerField(default=0)
 	related_table = models.CharField(max_length=512, null=True)
+	created = models.DateTimeField(auto_now_add=True)
+	modified = models.DateTimeField(auto_now=True)
 
 class UserTableTag(models.Model):
 	table = models.ForeignKey(UserTable)

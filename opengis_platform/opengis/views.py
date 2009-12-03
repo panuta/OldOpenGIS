@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
 from django.utils import simplejson
+from django.utils.translation import ugettext as _
 
 import opengis
 from opengis import constants, sql, errors, query, utilities
@@ -61,8 +62,8 @@ def view_user_home(request, username):
 		user_tables = UserTable.objects.filter(account=account).order_by('-created')[:5]
 		user_queries = UserQuery.objects.filter(account=account).order_by('-created')[:5]
 	else:
-		user_tables = UserTable.objects.filter(account=account, share_level=9).order_by('-created')[:5]
-		user_queries = UserQuery.objects.filter(account=account, share_level=9).order_by('-created')[:5]
+		user_tables = UserTable.objects.filter(account=account, share_level=9).order_by('-created')
+		user_queries = UserQuery.objects.filter(account=account).order_by('-created')
 	
 	for table in user_tables: table.columns = [column.column_name for column in UserTableColumn.objects.filter(table=table)]
 	
@@ -75,11 +76,7 @@ def list_user_table(request, username):
 	(user, account, is_owner) = get_user_auth(request, username)
 	if is_owner: return redirect(reverse("opengis_list_my_table"))
 	
-	if user == request.user:
-		user_tables = UserTable.objects.filter(account=account)
-	else:
-		user_tables = UserTable.objects.filter(account=account, share_level=9)
-	
+	user_tables = UserTable.objects.filter(account=account)
 	for table in user_tables: table.columns = [column.column_name for column in UserTableColumn.objects.filter(table=table)]
 	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_list.html", {'account':account, 'user_tables':user_tables}, context_instance=RequestContext(request))
@@ -88,7 +85,7 @@ def ajax_list_user_table(request):
 	username = request.GET.get('username')
 	
 	try:
-		(user, account) = check_user_auth(request, username)
+		(user, account, is_owner) = get_user_auth(request, username)
 	except errors.OpenGISNotLoginError:
 		return HttpResponse(errors.format_ajax_return(errors.AJAX_NOT_AUTHENTICATED))
 	
@@ -105,75 +102,45 @@ def view_user_table(request, username, table_name):
 	account = Account.objects.get(user=request.user)
 	
 	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
-	user_table.columns = UserTableColumn.objects.filter(table=user_table)
+	user_table.columns = UserTableColumn.objects.filter(table=user_table).order_by('created')
 
 	table_model = opengis._create_model(user_table, user_table.columns)
 	table_data = table_model.objects.all()
 
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_view.html", {'account':account, 'user_table':user_table, 'table_data':table_data}, context_instance=RequestContext(request))
 
+# FORMAT: columns=[column_name]:[column_type]:[option_name]--[option_value]&columns=[column_name]:[column_type]:[option_name]--[option_value]
 @login_required
 def create_user_table(request):
 	account = Account.objects.get(user=request.user)
 	
+	columns = list()
+	columns_errors = list()
+	
 	if request.method == "POST":
-		table_name = request.POST.get('table_name')
-		description = request.POST.get('description')
-		tags = request.POST.get('tags')
+		form = ModifyTableForm(request, request.POST)
 		
-		# TODO Check table name duplication
+		(columns, error_flag) = _extract_user_table_columns_string(request.POST.getlist('columns'))
 		
-		raw_columns = request.POST.getlist('columns')
-		columns = list()
+		if not columns:
+			columns_errors.append("Table must have at least one column")
+			
+		elif form.is_valid() and not error_flag:
+			table_name = form.cleaned_data['table_name']
+			description = form.cleaned_data['description']
+			tags = form.cleaned_data['tags']
+			share_level = form.cleaned_data['share_level']
+			display_column = form.cleaned_data['display_column']
 		
-		# FORMAT: columns=[column_name]:[column_type]:[option_name]--[option_value]&columns=[column_name]:[column_type]:[option_name]--[option_value]
-		
-		column_count = 1 # Did not use enumerate because this way it will not count if column format in invalid
-		for raw_column in raw_columns:
-			
-			splited = raw_column.split(':')
-			
-			if len(splited) < 2: continue
-			
-			column = {'name':splited[0]}
-			
-			for column_option in splited[2:]:
-				(option_name, splitter, option_value) = column_option.partition(constants.CREATE_TABLE_COLUMN_OPTION_SPLITTER)
-				if option_value.isdigit(): option_value = int(option_value)
-				column[option_name] = option_value
-			
-			type_string = splited[1]
-			
-			if type_string == "mine" or type_string == "others": type_string = "table"
-			
-			if type_string == "char": column_type = sql.TYPE_CHARACTER
-			elif type_string == "number": column_type = sql.TYPE_NUMBER
-			elif type_string == "datetime": column_type = sql.TYPE_DATETIME
-			elif type_string == "date": column_type = sql.TYPE_DATE
-			elif type_string == "time": column_type = sql.TYPE_TIME
-			elif type_string == "region": column_type = sql.TYPE_REGION
-			elif type_string == "location": column_type = sql.TYPE_LOCATION
-			elif type_string == "table": column_type = sql.TYPE_USER_TABLE
-			elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
-			else: column_type = 0
-			
-			if type_string == "table":
-				# TODO Check table share level
-				pass
-				
-			if column_type != 0:
-				column['type'] = column_type
-				column['physical_name'] = "column_" + str(column_count)
-				columns.append(column)
-				
-				column_count = column_count + 1
-		
-		if table_name and columns:
+			# Change display column to physical value
+			for column in columns:
+				if column['name'] == display_column: display_column = column['physical_name']
+	
 			# Create table metadata
-			user_table = UserTable.objects.create(account=account, table_name=table_name, description=description)
+			user_table = UserTable.objects.create(account=account, table_name=table_name, description=description, share_level=share_level, display_column=display_column)
 			user_table.table_class_name = constants.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
 			user_table.save()
-		
+
 			user_table_columns = list()
 			for column in columns:
 				user_table_columns.append(UserTableColumn.objects.create(
@@ -183,27 +150,146 @@ def create_user_table(request):
 					data_type=column.get('type'), 
 					related_table=column.get('related')
 					))
-		
+
 			# Create table at database server
 			sql.sql_create_table(user_table, user_table_columns)
-		
-		return redirect(reverse("opengis_view_my_table", args=[table_name]))
+
+			return redirect(reverse("opengis_view_my_table", args=[table_name]))
+				
 	else:
-		form = CreateTableForm()
+		form = ModifyTableForm(request)
 	
 	user_tables = UserTable.objects.filter(account=account)
 	
-	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_create.html", {'account':account, 'form':form, 'user_tables':user_tables}, context_instance=RequestContext(request))
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_create.html", {'account':account, 'form':form, 'columns':columns, 'columns_errors':columns_errors}, context_instance=RequestContext(request))
 
 def ajax_input_user_table(request):
 	pass
 
 @login_required
-def edit_user_table(request):
-	pass
+def edit_user_table(request, table_name):
+	account = Account.objects.get(user=request.user)
+	
+	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
+	user_table.columns = UserTableColumn.objects.filter(table=user_table).order_by('created')
+	
+	columns_errors = list()
+	
+	if request.method == "POST":
+		form = ModifyTableForm(request, request.POST)
+		
+		rename_columns = request.POST.getlist("rename_column")
+		delete_columns = request.POST.getlist("delete_column")
+		
+		(columns, error_flag) = _extract_user_table_columns_string(request.POST.getlist('columns'))
+		
+		if not columns and len(delete_columns) >= len(user_table.columns):
+			columns_errors.append("Table must have at least one column")
+			
+		elif form.is_valid() and not error_flag:
+			table_name = form.cleaned_data['table_name']
+			description = form.cleaned_data['description']
+			tags = form.cleaned_data['tags']
+			share_level = form.cleaned_data['share_level']
+			display_column = form.cleaned_data['display_column']
+			
+			pass
+		
+		
+		
+		
+		"""
+		(columns, error_flag) = _extract_user_table_columns_string(request.POST.getlist('columns'))
+		
+		if not columns:
+			columns_errors.append("Table must have at least one column")
+
+		elif form.is_valid() and not error_flag:
+			table_name = form.cleaned_data['table_name']
+			description = form.cleaned_data['description']
+			tags = form.cleaned_data['tags']
+			share_level = form.cleaned_data['share_level']
+			display_column = form.cleaned_data['display_column']
+			
+			# Check table name duplication
+			table_name = request.POST['table_name']
+			if UserTable.objects.filter(account=account, table_name=table_name).count():
+				form.errors.table_name = _("This table name is already existed.")
+			
+			else:
+				
+				
+				# Update table metadata
+				user_table = UserTable.objects.create(account=account, table_name=table_name, description=description, share_level=share_level, display_column=display_column)
+				user_table.save()
+				
+				return redirect(reverse("opengis_view_my_table", args=[table_name]))
+				
+		"""
+		
+	else:
+		form = ModifyTableForm(request, initial={
+			'table_name':user_table.table_name,
+			'description':user_table.description,
+			'share_level':user_table.share_level,
+			'display_column':user_table.display_column,
+			'existing_table_id':user_table.id,
+		})
+		
+		# TODO Convert user_table.columns to columns
+		
+	
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_edit.html", {'account':account, 'form':form, 'user_table':user_table}, context_instance=RequestContext(request))
+
+def _extract_user_table_columns_string(raw_columns):
+	columns = list()
+	error_flag = False
+	column_count = 1 # Did not use enumerate because this way it will not count if column format in invalid
+	
+	for raw_column in raw_columns:
+		splited = raw_column.split(':')
+	
+		if len(splited) < 2: continue # Ignore if column information is missing
+		
+		column = {'name':splited[0]}
+		type_string = splited[1]
+	
+		for column_option in splited[2:]:
+			(option_name, splitter, option_value) = column_option.partition(constants.CREATE_TABLE_COLUMN_OPTION_SPLITTER)
+			if option_value.isdigit(): option_value = int(option_value)
+			column[option_name] = option_value
+		
+		if type_string == "mine" or type_string == "others": type_string = "table"
+	
+		if type_string == "char": column_type = sql.TYPE_CHARACTER
+		elif type_string == "number": column_type = sql.TYPE_NUMBER
+		elif type_string == "datetime": column_type = sql.TYPE_DATETIME
+		elif type_string == "date": column_type = sql.TYPE_DATE
+		elif type_string == "time": column_type = sql.TYPE_TIME
+		elif type_string == "region": column_type = sql.TYPE_REGION
+		elif type_string == "location": column_type = sql.TYPE_LOCATION
+		elif type_string == "table": column_type = sql.TYPE_USER_TABLE
+		elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
+		else: column_type = 0
+		
+		if type_string == "table": # Check both 'mine' and 'others'
+			related_table = UserTable.objects.get(table_id=column['related'])
+			
+			if related_table.account != account and related_table.share_level != 9:
+				column['error'] = _("This table is private table")
+				error_flag = True
+		
+		if column_type != 0:
+			column['type'] = column_type
+			column['physical_name'] = "column_" + str(column_count)
+			columns.append(column)
+		
+			column_count = column_count + 1
+	
+	return (columns, error_flag)
 
 @login_required
-def delete_user_table(request):
+def delete_user_table(request, table_name):
 	pass
 
 @login_required
@@ -263,6 +349,32 @@ def import_user_table(request, table_name):
 	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
 
+def ajax_get_table_columns(request):
+	table_codes = request.GET.getlist('table_code')
+	
+	result = list()
+	for table_code in table_codes:
+		if table_code in REGISTERED_BUILT_IN_TABLES:
+			table_columns = REGISTERED_BUILT_IN_TABLES[table_code].Info.columns
+		
+			columns = [{'name':table_columns[column_code]['name'],'value':table_columns[column_code]['physical_name']} for column_code in table_columns.keys()]
+		
+		elif table_code:
+			user_table = UserTable.objects.get(pk=table_code)
+			table_columns = UserTableColumn.objects.filter(table=user_table)
+		
+			columns = [{'name':column.column_name,'value':column.physical_column_name} for column in table_columns]
+		
+		result = {'table':table_code,'columns':columns}
+	
+	if result:
+		return HttpResponse(errors.format_ajax_return(errors.AJAX_SUCCESS,{},"columns:" + simplejson.dumps(result)))
+	else:
+		return HttpResponse(errors.format_ajax_return(errors.AJAX_RESOURCE_NOT_FOUND))
+
+def search_public_table(request):
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_search.html", {}, context_instance=RequestContext(request))
+
 ##############################
 # TABLE QUERY
 ##############################
@@ -281,7 +393,18 @@ def visualize_user_query(request, query_name):
 
 @login_required
 def create_user_query(request):
-	pass
+	account = Account.objects.get(user=request.user)
+	
+	if request.method == "POST":
+		
+		return redirect(reverse("opengis_view_my_query", args=[query_name]))
+	else:
+		form = CreateQueryForm()
+	
+	user_queries = UserQuery.objects.filter(account=account)
+	
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "query_create.html", {'account':account, 'form':form, 'user_queries':user_queries}, context_instance=RequestContext(request))
+	
 
 @login_required
 def edit_user_query(request, query_name):

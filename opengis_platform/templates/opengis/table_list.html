@@ -1,13 +1,17 @@
 {% extends "./opengis/base.html" %}
+{% load opengis_tags %}
 
 {% block body_content %}
 <div class="share_home style_tables">
-	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% url opengis_view_my_home %}">Profile</a> | <em>Tables</em> | <a href="{% url opengis_list_my_query %}">Queries</a></div>
+	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% my_url opengis_view_my_home opengis_view_user_home %}">Profile</a> | <em>Tables</em> | <a href="{% my_url opengis_list_my_query opengis_list_user_query %}">Queries</a>{% ifnotequal user account.user %} <span class="back">[<a href="{% url opengis_list_my_query %}">Back to my tables</a>]</span>{% endifnotequal %}</div>
+	{% ifequal user account.user %}
 	<div class="top_actions">
 		<ul>
-			<li><a href="{% url opengis_create_my_table %}">Create new table</a></li>
+			<li><img src="{{MEDIA_URL}}/images/icon_create.png"/> <a href="{% url opengis_create_my_table %}">Create new table</a></li>
+			<li><img src="{{MEDIA_URL}}/images/icon_world_go.png"/> <a href="{% url opengis_search_public_table %}" target="_blank">Search public tables</a></li>
 		</ul>
 	</div>
+	{% endifequal %}
 	<div>
 		{% if not user_tables %}
 			<div class="no_list_item">No item found</div>
@@ -15,16 +19,22 @@
 			<ol>
 				{% for table in user_tables %}
 					<li class="item">
-						<h4><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h4>
-						<p class="description">{{table.description|default:'No description'}}</p>
-						<p class="tags">tag1 tag2 tag3 tag4</p>
-						<div class="action_panel">
-							<ul>
-								<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
-								<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
-								<li class="warning"><a href="{% url opengis_delete_my_table table.table_name %}">Delete</a></li>
-							</ul>
+						<div class="left_panel">{% print_share_level_html MEDIA_URL table.share_level %}</div>
+						<div class="right_panel">
+							<h3><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h3>
+							<p class="description">{{table.description|default:'<span>No description<span>'}}</p>
+							<p class="tags">tag1 tag2 tag3 tag4</p>
+							{% ifequal user account.user %}
+							<div class="action_panel">
+								<ul>
+									<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
+									<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
+									<li class="warning"><a href="{% url opengis_delete_my_table table.table_name %}">Delete</a></li>
+								</ul>
+							</div>
+							{% endifequal %}
 						</div>
+						<div class="clear"></div>
 					</li>
 				{% endfor %}
 			</ol>

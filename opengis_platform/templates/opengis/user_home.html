@@ -16,44 +16,53 @@ $(document).ready(function() {
 	});
 });
 </script>
-
 {% endblock %}
 
 {% block body_content %}
 <div class="share_home style_profile">
-	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <em>Profile</em> | <a href="{% my_url opengis_list_my_table opengis_list_user_table %}">Tables</a> | <a href="{% my_url opengis_list_my_query opengis_list_user_query %}">Queries</a></div>
-	<div class="list_header"><h3>Recent Tables</h3> {% ifequal user account.user %}<span>[ <a href="{% url opengis_create_my_table %}">Create new table</a> ]</span>{% endifequal %}</div>
+	<div class="head_nav">
+		{% ifequal user account.user %}
+			My &#187; <em>Profile</em> | <a href="{% url opengis_list_my_table %}">Tables</a> | <a href="{% url opengis_list_my_query %}">Queries</a>
+		{% else %}
+			{{account.user.username}} &#187; <em>Profile</em> <span class="back">[<a href="{% url opengis_view_my_home %}">Back to my profile</a>]</span>
+		{% endifequal %}
+	</div>
+	<div class="list_header">{% ifequal user account.user %}<h2>Recent Tables</h2> <span>[ <a href="{% url opengis_create_my_table %}">Create new table</a> ]</span>{% else %}<h2>{{account.user.username}}'s Tables</h2>{% endifequal %}</div>
 	{% if not user_tables %}
 		<div class="no_list_item">No item found</div>
 	{% else %}
 		<ol>
 			{% for table in user_tables %}
 				<li class="item">
-					<h4><a href="{% url opengis_view_my_table table.table_name|urlencode %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h4>
-					<p class="description">{{table.description|default:'No description'}}</p>
-					<p class="tags">tag1 tag2 tag3 tag4</p>
-					{% ifequal user account.user %}
-					<div class="action_panel">
-						<ul>
-							<li><a href="{% url opengis_import_my_table table.table_name|urlencode %}">Import Data</a></li>
-							<li><a href="{% url opengis_edit_my_table table.table_name|urlencode %}">Edit Table</a></li>
-							<li class="warning"><a href="{% url opengis_delete_my_table table.table_name|urlencode %}">Delete</a></li>
-						</ul>
+					<div class="left_panel">{% print_share_level_html MEDIA_URL table.share_level %}</div>
+					<div class="right_panel">
+						<h3><a href="{% url opengis_view_my_table table.table_name|urlencode %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h3>
+						<p class="description">{{table.description|default:'No description'}}</p>
+						<p class="tags">tag1 tag2 tag3 tag4</p>
+						{% ifequal user account.user %}
+						<div class="action_panel">
+							<ul>
+								<li><a href="{% url opengis_import_my_table table.table_name|urlencode %}">Import Data</a></li>
+								<li><a href="{% url opengis_edit_my_table table.table_name|urlencode %}">Edit Table</a></li>
+								<li class="warning"><a href="{% url opengis_delete_my_table table.table_name|urlencode %}">Delete</a></li>
+							</ul>
+						</div>
+						{% endifequal %}
 					</div>
-					{% endifequal %}
+					<div class="clear"></div>
 				</li>
 			{% endfor %}
 		</ol>
 	{% endif %}
 	
-	<div class="list_header"><h3>Recent Queries</h3> {% ifequal user account.user %}<span>[ <a href="{% url opengis_create_my_query %}">Create new query</a> ]</span>{% endifequal %}</div>
+	<div class="list_header">{% ifequal user account.user %}<h2>Recent Queries</h2> <span>[ <a href="{% url opengis_create_my_query %}">Create new query</a> ]</span>{% else %}<h2>{{account.user.username}}'s Queries</h2>{% endifequal %}</div>
 	{% if not user_queries %}
 		<div class="no_list_item">No item found</div>
 	{% else %}
 		<ol>
 			{% for query in user_queries %}
 				<li class="item">
-					<h4><a href="{% url opengis_view_my_query query.query_name|urlencode %}">{{query.query_name}}</a></h4>
+					<h3><a href="{% url opengis_view_my_query query.query_name|urlencode %}">{{query.query_name}}</a></h3>
 					<p class="description">{{query.description|default:'No description'}}</p>
 					<div class="action_panel">
 						<ul>

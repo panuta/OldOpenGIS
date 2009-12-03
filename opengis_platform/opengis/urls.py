@@ -12,11 +12,10 @@ urlpatterns = patterns('opengis.views',
 	url(r'^my/queries/$', 'list_user_query', name="opengis_list_my_query", kwargs={'username':''}),
 	
 	url(r'^user/(?P<username>\w+)/$', 'view_user_home', name="opengis_view_user_home"),
-	url(r'^user/(?P<username>\w+)/tables/$', 'list_user_table', name="opengis_list_user_table"),
-	url(r'^user/(?P<username>\w+)/queries/$', 'list_user_query', name="opengis_list_user_query"),
 	
 	# ----- User Table ----- #
 	url(r'^my/tables/create/$', 'create_user_table', name="opengis_create_my_table"),
+	url(r'^my/tables/search/$', 'search_public_table', name="opengis_search_public_table"),
 	
 	url(r'^my/table/(?P<table_name>[^\/]+)/$', 'view_user_table', name="opengis_view_my_table", kwargs={'username':''}),
 	url(r'^my/table/(?P<table_name>[^\/]+)/import/$', 'import_user_table', name="opengis_import_my_table"),
@@ -39,6 +38,7 @@ urlpatterns = patterns('opengis.views',
 	
 	# Internal Ajax Call #
 	url(r'^ajax/internal/tables/list/$', 'ajax_list_user_table', name="opengis_ajax_list_user_table"),
+	url(r'^ajax/internal/table/columns/$', 'ajax_get_table_columns', name="opengis_ajax_get_table_columns"),
 	
 	url(r'^ajax/internal/table/(?P<table_name>[^\/]+)/add/$', 'ajax_input_user_table', name="opengis_ajax_input_user_table"),
 	
