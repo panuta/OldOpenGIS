@@ -7,7 +7,7 @@
 	{% ifequal user account.user %}
 	<div class="top_actions">
 		<ul>
-			<li><a href="{% url opengis_create_my_query %}">Create new query</a></li>
+			<li><img src="{{MEDIA_URL}}/images/icon_create.png"/> <a href="{% url opengis_create_my_query %}">Create new query</a></li>
 		</ul>
 	</div>
 	{% endifequal %}
@@ -19,14 +19,13 @@
 				{% for query in user_queries %}
 					<li class="item">
 						<h3><a href="{% url opengis_view_my_query query.query_name %}">{{query.query_name}}</a></h3>
-						<p class="description">{{query.description|default:'No description'}}</p>
+						{% if query.description %}<p class="description">{{query.description}}</p>{% endif %}
 						<div class="action_panel">
 							<ul>
 								<li><a href="{% url opengis_visualize_my_query query.query_name %}">Visualize</a></li>
 								{% ifequal user account.user %}
-								<li><a href="#">Get Links</a></li>
-								<li><a href="{% url opengis_edit_my_query query.query_name %}">Edit Table</a></li>
-								<li class="warning"><a href="{% url opengis_delete_my_query query.query_name %}">Delete</a></li>
+								<li><a href="{% url opengis_edit_my_query query.query_name %}">Edit Query</a></li>
+								<li class="warning"><a href="#">Delete</a></li>
 								{% endifequal %}
 							</ul>
 						</div>

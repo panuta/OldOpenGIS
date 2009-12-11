@@ -37,6 +37,3 @@ class ImportDataToTableForm(forms.Form):
 	source_type			= forms.ChoiceField(choices=(('1','CSV'),), required=False)
 	file				= forms.FileField()
 
-class CreateQueryForm(forms.Form):
-	query_name			= forms.CharField()
-	description			= forms.CharField(required=False, widget=forms.Textarea())

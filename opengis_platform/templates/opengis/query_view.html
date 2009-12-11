@@ -1,0 +1,49 @@
+{% extends "./opengis/content_base.html" %}
+{% load opengis_tags %}
+
+
+
+{% block sub_body_content %}
+<div class="page_header">Query Name: <h2>{{user_query.query_name}}</h2></div>
+<div class="page_nav">
+	<ul>
+		<li><a href="#">Visualize</a></li>
+		<li>|</li>
+		<li><a href="{% url opengis_edit_my_query user_query.query_name %}">Edit Query</a></li>
+		<li><a href="#" class="warning">Delete</a></li>
+	</ul>
+</div>
+<div class="style_table_view">
+	<div class="left_panel">
+		<h3>Created on</h3>
+		<div>{% print_datetime user_query.created %}</div>
+		<h3>Description</h3>
+		<div>{{user_query.description|default:'<span>[ No description ]</span>'}}</div>
+	</div>
+	<div class="right_panel">
+		<table class="view_data">
+			<thead>
+				<tr>
+					{% for column in query_result.columns %}
+					<th>{% print_query_column_name column %}</th>
+					{% endfor %}
+				</tr>
+			</thead>
+			<tbody>
+				{% for data_row in query_result.values %}
+					<tr>
+						{% for value in data_row %}
+						<td>{{value}}</td>
+						{% endfor %}
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% if not query_result.values %}
+			<div class="no_table_data">No data in table</div>
+		{% endif %}
+	</div>
+	<div class="clear"></div>
+</div>
+
+{% endblock %}

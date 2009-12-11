@@ -20,7 +20,6 @@ urlpatterns = patterns('opengis.views',
 	url(r'^my/table/(?P<table_name>[^\/]+)/$', 'view_user_table', name="opengis_view_my_table", kwargs={'username':''}),
 	url(r'^my/table/(?P<table_name>[^\/]+)/import/$', 'import_user_table', name="opengis_import_my_table"),
 	url(r'^my/table/(?P<table_name>[^\/]+)/edit/$', 'edit_user_table', name="opengis_edit_my_table"),
-	url(r'^my/table/(?P<table_name>[^\/]+)/delete/$', 'delete_user_table', name="opengis_delete_my_table"),
 	
 	url(r'^user/(?P<username>\w+)/table/(?P<table_name>[^\/]+)/$', 'view_user_table', name="opengis_view_user_table"),
 	
@@ -31,28 +30,8 @@ urlpatterns = patterns('opengis.views',
 	url(r'^my/query/(?P<query_name>[^\/]+)/$', 'view_user_query', name="opengis_view_my_query", kwargs={'username':''}),
 	url(r'^my/query/(?P<query_name>[^\/]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_my_query"),
 	url(r'^my/query/(?P<query_name>[^\/]+)/edit/$', 'edit_user_query', name="opengis_edit_my_query"),
-	url(r'^my/query/(?P<query_name>[^\/]+)/delete/$', 'delete_user_query', name="opengis_delete_my_query"),
 	
 	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[^\/]+)/$', 'view_user_query', name="opengis_view_user_query"),
 	url(r'^user/(?P<username>\w+)/query/(?P<query_name>[^\/]+)/visualize/$', 'visualize_user_query', name="opengis_visualize_user_query"),
 	
-	# Internal Ajax Call #
-	url(r'^ajax/internal/tables/list/$', 'ajax_list_user_table', name="opengis_ajax_list_user_table"),
-	url(r'^ajax/internal/table/columns/$', 'ajax_get_table_columns', name="opengis_ajax_get_table_columns"),
-	
-	url(r'^ajax/internal/table/(?P<table_name>[^\/]+)/add/$', 'ajax_input_user_table', name="opengis_ajax_input_user_table"),
-	
-	
-	
-	
-	url(r'^ajax/internal/get_tables_for_query_builder/$', 'ajax_get_tables_for_query_builder', name="opengis_ajax_get_tables_for_query_builder"),
-	url(r'^ajax/internal/save_building_query/$', 'ajax_save_building_query', name="opengis_ajax_save_building_query"),
-	
-	
-	
-	
-	
-	# url(r'^user/(?P<account_username>\w+)/table/(?P<table_name>\w+)/visualize/$', 'get_user_table_visualize', name="opengis_get_user_table_visualize"),
 )
-
-# urlpatterns += patterns('',)

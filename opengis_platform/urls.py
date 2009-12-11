@@ -10,6 +10,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
 	(r'^', include('opengis_platform.opengis.urls')),
+	(r'^api/', include('opengis_platform.opengis.urls_api')),
 	
 	(r'^admin/(.*)', admin.site.root),
 	(r'^accounts/', include('registration.backends.default.urls')),

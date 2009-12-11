@@ -1,6 +1,22 @@
 {% extends "./opengis/base.html" %}
 {% load opengis_tags %}
 
+{% block head_content %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".delete-table").click(function() {
+		if(window.confirm("Confirm?")) {
+			var clickElement = $(this);
+			$.post("{% url opengis_api_table_delete %}", {table_id:$(this).attr("rel")}, function(data) {
+				clickElement.closest("li.item").fadeOut();
+			}, "json");
+		}
+		return false;
+	});
+});
+</script>
+{% endblock %}
+
 {% block body_content %}
 <div class="share_home style_tables">
 	<div class="head_nav">{% ifequal user account.user %}My{% else %}{{account.user.username}}{% endifequal %} &#187; <a href="{% my_url opengis_view_my_home opengis_view_user_home %}">Profile</a> | <em>Tables</em> | <a href="{% my_url opengis_list_my_query opengis_list_user_query %}">Queries</a>{% ifnotequal user account.user %} <span class="back">[<a href="{% url opengis_list_my_query %}">Back to my tables</a>]</span>{% endifnotequal %}</div>
@@ -19,22 +35,19 @@
 			<ol>
 				{% for table in user_tables %}
 					<li class="item">
-						<div class="left_panel">{% print_share_level_html MEDIA_URL table.share_level %}</div>
-						<div class="right_panel">
-							<h3><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h3>
-							<p class="description">{{table.description|default:'<span>No description<span>'}}</p>
-							<p class="tags">tag1 tag2 tag3 tag4</p>
-							{% ifequal user account.user %}
-							<div class="action_panel">
-								<ul>
-									<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
-									<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
-									<li class="warning"><a href="{% url opengis_delete_my_table table.table_name %}">Delete</a></li>
-								</ul>
-							</div>
-							{% endifequal %}
+						<h3><a href="{% url opengis_view_my_table table.table_name %}">{{table.table_name}}</a> <span class="columns">- ( {{table.columns|join:" , "}} )</span></h3>
+						<div class="meta">{% print_share_level_html MEDIA_URL table.share_level %} | Created on {% print_datetime table.created %}</div>
+						{% if table.description %}<p class="description">{{table.description}}</p>{% endif %}
+						{% if table.tags %}<div class="tags"><ul>{% for tag in table.tags %}<li>{{tag}}</li>{% endfor %}</ul></div>{% endif %}
+						{% ifequal user account.user %}
+						<div class="action_panel">
+							<ul>
+								<li><a href="{% url opengis_import_my_table table.table_name %}">Import Data</a></li>
+								<li><a href="{% url opengis_edit_my_table table.table_name %}">Edit Table</a></li>
+								<li class="warning"><a href="#" class="delete-table" rel="{{table.id}}">Delete</a></li>
+							</ul>
 						</div>
-						<div class="clear"></div>
+						{% endifequal %}
 					</li>
 				{% endfor %}
 			</ol>

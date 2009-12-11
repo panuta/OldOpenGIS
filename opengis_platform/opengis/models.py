@@ -96,7 +96,7 @@ class UserTable(models.Model):
 	table_name = models.CharField(max_length=512)
 	table_class_name = models.CharField(max_length=512, null=True)
 	description = models.CharField(max_length=512, null=True)
-	share_level = models.IntegerField(default=0) # 0-Private, 9-Public
+	share_level = models.IntegerField(default=1) # 1-Private, 9-Public
 	display_column = models.CharField(max_length=512) # Store as physical column name
 	created = models.DateTimeField(auto_now_add=True)
 	modified = models.DateTimeField(auto_now=True)

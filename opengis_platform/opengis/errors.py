@@ -1,5 +1,6 @@
 AJAX_SUCCESS = "success"
 
+
 AJAX_NO_USER = "no-user"
 AJAX_NOT_AUTHENTICATED = "not-authenticated"
 AJAX_ACCESS_DENIED = "access-denied"

@@ -1,6 +1,32 @@
 {% extends "./opengis/content_base.html" %}
 {% load opengis_tags %}
 
+{% block head_content %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".empty-table").click(function() {
+		if(window.confirm("Confirm?")) {
+			var clickElement = $(this);
+			$.post("{% url opengis_api_table_empty %}", {table_id:$(this).attr("rel")}, function(data) {
+				window.location.reload();
+			}, "json");
+		}
+		return false;
+	});
+	
+	$(".delete-table").click(function() {
+		if(window.confirm("Confirm?")) {
+			var clickElement = $(this);
+			$.post("{% url opengis_api_table_delete %}", {table_id:$(this).attr("rel")}, function(data) {
+				window.location = "http://" + window.location.host + "/my/tables/";
+			}, "json");
+		}
+		return false;
+	});
+});
+</script>
+{% endblock %}
+
 {% block sub_body_content %}
 <div class="page_header">Table Name: <h2>{{user_table.table_name}}</h2></div>
 <div class="page_nav">
@@ -10,36 +36,49 @@
 		<li>|</li>
 		<li><a href="{% url opengis_edit_my_table user_table.table_name %}">Edit Table</a></li>
 		<li>|</li>
-		<li><a href="#" class="warning">Empty Table</a></li>
-		<li><a href="{% url opengis_delete_my_table user_table.table_name %}" class="warning">Delete</a></li>
+		<li><a href="#" class="warning empty-table" rel="{{user_table.id}}">Empty Table</a></li>
+		<li><a href="#" class="warning delete-table" rel="{{user_table.id}}">Delete</a></li>
 	</ul>
 </div>
-
 <div class="style_table_view">
-	<table class="view_data">
-		<thead>
-			<tr>
-				{% if table_data %}<th></th>{% endif %}
-				<th>ID</th>
-			{% for column in user_table.columns %}
-				<th>{{column.column_name}}</th>
-			{% endfor %}
-			</tr>
-		</thead>
-		<tbody>
-			{% for data_row in table_data %}
+	<div class="left_panel">
+		<h3>Created on</h3>
+		<div>{% print_datetime user_table.created %}</div>
+		{% if user_table.tags %}
+		<h3>Tags</h3>
+		<div><ul>{% for tag in user_table.tags %}<li>{{tag.tag_name}}</li>{% endfor %}</ul></div>
+		{% endif %}
+		<h3>Description</h3>
+		<div>{{user_table.description|default:'<span>[ No description ]</span>'}}</div>
+	</div>
+	<div class="right_panel">
+		<table class="view_data">
+			<thead>
 				<tr>
-					<td><a href="#">Edit</a></td>
-					<td>{{data_row.id}}</td>
-				{% for column in user_table.columns %}
-					<td>{% print_value data_row column.physical_column_name %}</td>
-				{% endfor %}
+					{% if table_data %}<th></th>{% endif %}
+					<th>ID</th>
+					{% for column in user_table.columns %}
+					<th>{{column.column_name}}</th>
+					{% endfor %}
 				</tr>
-			{% endfor %}
-		</tbody>
-	</table>
-	{% if not table_data %}
-		<div class="no_table_data">No data in table</div>
-	{% endif %}
+			</thead>
+			<tbody>
+				{% for data_row in table_data %}
+					<tr>
+						<td><a href="#">Edit</a></td>
+						<td>{{data_row.id}}</td>
+						{% for column in user_table.columns %}
+						<td>{% print_value data_row column.physical_column_name %}</td>
+						{% endfor %}
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% if not table_data %}
+			<div class="no_table_data">No data in table</div>
+		{% endif %}
+	</div>
+	<div class="clear"></div>
 </div>
+
 {% endblock %}

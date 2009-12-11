@@ -2,103 +2,181 @@
 {% load opengis_tags %}
 
 {% block head_content %}
+<script type="text/javascript" src="{{MEDIA_URL}}/scripts/scripts.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	$(".columns_form select.data_type").change(function() {
-		var data_type = $(this).find("option:selected").val();
-		
-		if(data_type == "datetime") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option value="datetime">Date and Time</option><option value="date">Date only</option><option value="time">Time only</option></select>');
-		
-		} else if(data_type == "builtin") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option></option>{% generate_built_in_table_list %}</select>');
-		
-		} else if(data_type == "table") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option></option><option value="mine">My Tables</option><option value="others">User\'s Table</option></select>');
-			
-			$(this).parent().find(".more_inputs select").change(function() {
-				var select_object = $(this);
-				var table_type = $(this).find("option:selected").val();
-				
-				$(this).parent().find("select.data_type_table_tyle").remove();
-				
-				if(table_type == "mine") {
-					$.getJSON("{% url opengis_ajax_list_user_table %}", function(data) {
-						var list_html = '';
-						for(var i in data.tables) {
-							list_html += '<option value="' + data.tables[i].id + '">' + data.tables[i].name + '</option>';
-						}
-						
-						select_object.parent().append('<select class="data_type_table_tyle"><option></option>' + list_html + '</select>');
-					});
-				
-				} else if(table_type == "others") {
-					// TODO Open Popup to ask for username, table code etc.
-					
-				}
-			});
-		
-		} else {
-			$(this).parent().find(".more_inputs").html('');
-		}
+		onchange_construct_table_column_type($(this));
 	});
 	
 	$(".columns_form input[type='text']").change(function() {
-		$(".display_column_panel").show();
-		$("#id_display_column_selector").html("");
-		
-		$(".columns_form input[type='text']").each(function() {
-			if($(this).val() != "") $("#id_display_column_selector").append("<option>" + $(this).val() + "</option>");
-		});
+		onchange_construct_table_column_name();
 	});
 	
+	/*
 	// Add new column click event
 	$("#add_new_column").click(function() {
-		var col_num = $(".columns_form ol li").length - 1; // -2+1
-		$(".columns_form ol li:last").before('<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="clear"></div></li>');
+		click_construct_table_add_column($(this));
 		return false;
 	});
+	*/
 	
-	$("form button").click(function() {
-		dosubmit();
-		return true;
+	/*
+	$(".columns_form .delete-column").click(function() {
+		undo_redo_delete_column($(this));
+		return false;
+	});
+	*/
+	
+	$("form .button_panel button[type='submit']").click(function() {
+		submit();
+		return false;
 	});
 });
 
-function dosubmit() {
-	$("#id_display_column").val($("#id_display_column_selector option:selected").val());
+function undo_redo_delete_column(clickObject) {
+	if(clickObject.parent().find(".mark_as_deleted").length == 0) {
+		if($("#id_display_column_selector option:selected").text() == clickObject.parent().parent().find("input[name='column_name']").val()) {
+			alert("Cannot delete a column that currently used in display column");
+			
+		} else {
+			clickObject.parent().html('<span class="mark_as_deleted">To be deleted</span> <a href="#">Undo</a>').find("a").click(function() {
+				undo_redo_delete_column($(this));
+				return false;
+			});
+		}
+		
+	} else {
+		clickObject.parent().html('<a href="#" class="delete-column">Delete</a>').find("a").click(function() {
+			undo_redo_delete_column($(this));
+			return false;
+		});
+	}
+}
+
+function submit() {
+	/*
+	Step 1: Rename Columns
+	Step 2: Add Columns
+	Step 3: Update Table
+	Step 4: Delete Columns
+	*/
+	
+	// Gathering data //
+	var table_name = $("form input[name='table_name']").val();
+	var table_description = $("form textarea[name='table_description']").val();
+	var table_tags = $("form input[name='table_tags']").val();
+	var table_share_level = $("form select[name='table_share_level'] option:selected").val();
+	var display_column = $("#id_display_column_selector option:selected").val();
+	
+	var rename_columns = new Array();
+	var delete_columns = new Array();
+	var add_columns = new Array();
 	
 	$(".columns_form li.input").each(function() {
-		var column_name = $(this).find("input").val();
-		var data_type = $(this).find("select.data_type option:selected").val();
+		var column_id = $(this).attr("rel");
 		
-		if(column_name != "" && data_type != "") {
-			var column_parameter = "";
-			
-			if(data_type == "datetime") {
-				var datetime_type = $(this).find("select.related option:selected").val();
-				if(datetime_type != "") column_parameter = column_name + ":" + datetime_type;
-			
-			} else if(data_type == "builtin") {
-				var builtin_table_id = $(this).find("select.related option:selected").val();
-				if(datetime_type != "") column_parameter = column_name + ":" + data_type + ":related--" + builtin_table_id;
-
-			} else if(data_type == "table") {
-				var table_type = $(this).find("select.related option:selected").val();
-				var table_id = $(this).find("select.data_type_table_tyle option:selected").val();
-				
-				if(table_type != "" && table_id != "") column_parameter = column_name + ":" + table_type + ":related--" + table_id;
+		if(column_id != undefined && column_id != "") {
+			if($(this).find(".mark_as_deleted").length != 0) {
+				delete_columns.push($(this).attr("rel"));
 
 			} else {
-				column_parameter = column_name + ":" + data_type;
+				var column_name = $(this).find("input").val();
+				var prev_column_name = $(this).find("input").attr("rel");
+
+				if(column_name != prev_column_name) {
+					rename_columns.push(column_id + ':' + column_name);
+				}
 			}
 			
-			if(column_parameter != "") {
-				$("form").append('<input type="hidden" name="columns" value="' + column_parameter + '"/>');
+		} else {
+			var column_name = $(this).find("input").val();
+			var data_type = $(this).find("select.data_type option:selected").val();
+			
+			if(column_name != "") {
+				if(data_type == "datetime") {
+					var datetime_type = $(this).find("select.related option:selected").val();
+					data_type = datetime_type;
+
+				} else if(data_type == "builtin") {
+					var builtin_table_code = $(this).find("select.related option:selected").val();
+					add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + builtin_table_code + '"}');
+					return;
+
+				} else if(data_type == "table") {
+					var table_type = $(this).find("select.related option:selected").val();
+
+					var table_id = "";
+					if(table_type == "mine") {
+						table_id = $(this).find("select.related_table option:selected").val();
+
+					} else if(table_type == "others") {
+						table_id = $(this).find("span.related_table").attr('rel');
+					}
+
+					add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + table_id + '"}');
+					return;
+				}
+
+				add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '"}');
 			}
 		}
 	});
+	
+	// show loading
+	$(".button_panel .loading").show();
+	
+	do_rename_columns(rename_columns, function() {
+		do_add_columns(add_columns, function() {
+			do_update_table(table_name, table_description, table_tags, table_share_level, display_column, function() {
+				do_delete_columns(delete_columns, function() {
+					window.location = "http://" + window.location.host + "/my/table/" + table_name + "/";
+				});
+			});
+		});
+	});
 }
+
+function do_rename_columns(rename_columns, callback) {
+	if(rename_columns.length > 0) {
+		$.post("{% url opengis_api_table_rename_columns %}", {column:rename_columns}, function(data) {
+			
+			callback();
+		});
+	} else {
+		callback();
+	}
+}
+
+function do_add_columns(add_columns, callback) {
+	if(add_columns.length > 0) {
+		$.post("{% url opengis_api_table_add_columns %}", {column:add_columns}, function(data) {
+
+			callback();
+		});
+	} else {
+		callback();
+	}
+}
+
+function do_update_table(table_name, table_description, table_tags, share_level, display_column, callback) {
+	$.post("{% url opengis_api_table_edit %}", {table_id:{{user_table.id}},table_name:table_name,table_description:table_description,table_tags:table_tags,share_level:share_level,display_column:display_column}, function(data) {
+
+		callback();
+	});
+}
+
+function do_delete_columns(delete_columns, callback) {
+	if(delete_columns.length > 0) {
+		$.post("{% url opengis_api_table_delete_columns %}", {column:delete_columns}, function(data) {
+
+			callback();
+		});
+	} else {
+		callback();
+	}
+}
+
 </script>
 {% endblock %}
 
@@ -106,35 +184,31 @@ function dosubmit() {
 <div class="page_header">Table Name: <h2><a href="{% url opengis_view_my_table user_table.table_name %}">{{user_table.table_name}}</a> &#155; Edit Table</h2></div>
 
 <div class="style_table_create">
-	{{form.errors}}
 	<form action="." method="post" class="std_form">
 		<ul class="form">
-			<li class="long_textbox"><label for="id_table_name">Table Name:</label>{{form.table_name}}{{form.errors.table_name}}</li>
-			<li class="medium_textarea"><label for="id_description">Description:</label>{{form.description}}{{form.errors.description}}</li>
-			<li class="long_textbox"><label for="id_tags">Tags:</label>{{form.tags}}<div class="comment">* Example: thailand,female population,census</div>{{form.errors.tags}}</li>
-			<li><label for="id_share_level">Share Level:</label>{{form.share_level}}{{form.errors.share_level}}</li>
+			<li class="long_textbox"><label for="id_table_name">Table Name:</label><input type="text" name="table_name" value="{{user_table.table_name}}"/></li>
+			<li class="medium_textarea"><label for="id_description">Description:</label><textarea name="table_description">{{user_table.description}}</textarea></li>
+			<li class="long_textbox"><label for="id_tags">Tags:</label><input type="text" name="table_tags" value="{{user_table.tags_text}}"/><div class="comment">* Example: thailand,female population,census</div></li>
+			<li><label for="id_share_level">Share Level:</label><select name="table_share_level"><option value="1" {% ifequal user_table.share_level 1 %}selected="selected"{% endifequal %} >Private</option><option value="9" {% ifequal user_table.share_level 9 %}selected="selected"{% endifequal %} >Public</option></select></li>
 		</ul>
 		<div class="columns_form">
-			{% if columns_errors %}<ul class="errorlist">{% for error in columns_errors %}<li>{{error}}</li>{% endfor %}</ul>{% endif %}
 			<ol>
 				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
 				{% for column in user_table.columns %}
-				<li class="input"><label>Column</label><input type="text" value="{{column.column_name}}"/><div class="data_type">{% print_column_data_type column.data_type %}</div><div class="action"><a href="#">Delete</a></div><div class="error"></div><div class="clear"></div></li>
+				<li class="input" rel="{{column.id}}"><label>Column</label><input name="column_name" type="text" value="{{column.column_name}}" rel="{{column.column_name}}"/><div class="data_type">{% print_column_data_type column.data_type %}</div><div class="action"><!-- <a href="#" class="delete-column">Delete</a> --></div><div class="error"></div><div class="clear"></div></li>
 				{% endfor %}
-				{% for column in columns %}
-					<!-- New Columns -->
-				{% endfor %}
-				<li><a href="#" id="add_new_column">Add new column</a></li>
+				<!-- <li><a href="#" id="add_new_column">Add new column</a></li> -->
 			</ol>
 		</div>
 		<ul class="form display_column_panel">
-			<li><label for="id_display_column_selector">Display Column:</label><select id="id_display_column_selector">{% for column in user_table.columns %}<option {% ifequal column.physical_column_name user_table.display_column %}selected="selected"{% endifequal %}>{{column.column_name}}</option>{% endfor %}</select>{{form.display_column}}<div class="comment">* Value from which column that will be used in a list when editing</div>{{form.errors.display_column}}</li>
+			<li><label for="id_display_column_selector">Display Column:</label><select id="id_display_column_selector">{% for column in user_table.columns %}<option {% ifequal column.physical_column_name user_table.display_column %}selected="selected"{% endifequal %}>{{column.column_name}}</option>{% endfor %}</select><div class="comment">* Value from which column that will be used in a list when editing</div></li>
 		</ul>
 		<div class="button_panel">
-			{{form.existing_table_id}}
 			<button type="submit">Update Table</button>
-			<button type="button">Cancel</button>
+			<img src="{{MEDIA_URL}}/images/loading.gif" class="loading" style="display:none;"/>
 		</div>
 	</form>
 </div>
+
+<div id="select_other_user_table_popup" style="display:none;"></div>
 {% endblock %}

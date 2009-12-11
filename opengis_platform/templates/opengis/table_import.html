@@ -7,11 +7,11 @@
 	<p class="instruction">CSV ONLY! UNDERSTAND?</p>
 	<form action="." method="POST" enctype="multipart/form-data" class="std_form">
 		{{form.errors}}
-		<ul>
+		<ul class="form">
 			<li><label for="id_source_type">Source Format:</label>{{form.source_type}}</li>
 			<li><label for="id_file">Upload File:</label>{{form.file}}</li>
 		</ul>
-		<button type="submit">Submit</button>
+		<div class="button_panel"><button type="submit">Submit</button></div>
 	</form>
 </div>
 {% endblock %}

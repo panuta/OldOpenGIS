@@ -2,102 +2,84 @@
 {% load opengis_tags %}
 
 {% block head_content %}
+<script type="text/javascript" src="{{MEDIA_URL}}/scripts/scripts.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-	$(".columns_form select.data_type").change(function() {
-		var data_type = $(this).find("option:selected").val();
-		
-		if(data_type == "datetime") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option value="datetime">Date and Time</option><option value="date">Date only</option><option value="time">Time only</option></select>');
-		
-		} else if(data_type == "builtin") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option></option>{% generate_built_in_table_list %}</select>');
-		
-		} else if(data_type == "table") {
-			$(this).parent().find(".more_inputs").html('<select class="related"><option></option><option value="mine">My Tables</option><option value="others">User\'s Table</option></select>');
-			
-			$(this).parent().find(".more_inputs select").change(function() {
-				var select_object = $(this);
-				var table_type = $(this).find("option:selected").val();
-				
-				$(this).parent().find("select.data_type_table_tyle").remove();
-				
-				if(table_type == "mine") {
-					$.getJSON("{% url opengis_ajax_list_user_table %}", function(data) {
-						var list_html = '';
-						for(var i in data.tables) {
-							list_html += '<option value="' + data.tables[i].id + '">' + data.tables[i].name + '</option>';
-						}
-						
-						select_object.parent().append('<select class="data_type_table_tyle"><option></option>' + list_html + '</select>');
-					});
-				
-				} else if(table_type == "others") {
-					// TODO Open Popup to ask for username, table code etc.
-					
-				}
-			});
-		
-		} else {
-			$(this).parent().find(".more_inputs").html('');
-		}
-	});
-	
-	$(".columns_form input[type='text']").change(function() {
-		$(".display_column_panel").show();
-		$("#id_display_column_selector").html("");
-		
-		$(".columns_form input[type='text']").each(function() {
-			if($(this).val() != "") $("#id_display_column_selector").append("<option>" + $(this).val() + "</option>");
-		});
-	});
-	
-	// Add new column click event
-	$("#add_new_column").click(function() {
-		var col_num = $(".columns_form ol li").length - 1; // -2+1
-		$(".columns_form ol li:last").before('<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="clear"></div></li>');
-		return false;
-	});
-	
-	$("form button").click(function() {
-		dosubmit();
-		return true;
-	});
+	initialize_CreateTablePage();
 });
 
-function dosubmit() {
-	$("#id_display_column").val($("#id_display_column_selector option:selected").val());
+function submit() {
+	var table_name = $("form input[name='table_name']").val();
+	var table_description = $("form textarea[name='table_description']").val();
+	var table_tags = $("form input[name='table_tags']").val();
+	var table_share_level = $("form select[name='table_share_level'] option:selected").val();
+	var display_column = $("#id_display_column_selector option:selected").val();
 	
+	var columns = new Array();
 	$(".columns_form li.input").each(function() {
 		var column_name = $(this).find("input").val();
+		
+		if(column_name == undefined || column_name == "") {
+			// ERROR
+			return;
+		}
+		
 		var data_type = $(this).find("select.data_type option:selected").val();
 		
-		if(column_name != "" && data_type != "") {
-			var column_parameter = "";
-			
-			if(data_type == "datetime") {
-				var datetime_type = $(this).find("select.related option:selected").val();
-				if(datetime_type != "") column_parameter = column_name + ":" + datetime_type;
-			
-			} else if(data_type == "builtin") {
-				var builtin_table_id = $(this).find("select.related option:selected").val();
-				if(datetime_type != "") column_parameter = column_name + ":" + data_type + ":related--" + builtin_table_id;
-
-			} else if(data_type == "table") {
-				var table_type = $(this).find("select.related option:selected").val();
-				var table_id = $(this).find("select.data_type_table_tyle option:selected").val();
-				
-				if(table_type != "" && table_id != "") column_parameter = column_name + ":" + table_type + ":related--" + table_id;
-
+		if(data_type == undefined || data_type == "") {
+			// ERROR
+			return;
+		}
+		
+		if(data_type == "datetime") {
+			var datetime_type = $(this).find("select.related option:selected").val();
+			if(datetime_type == undefined || datetime_type == "") {
+				// ERROR
 			} else {
-				column_parameter = column_name + ":" + data_type;
+				data_type = datetime_type;
+			}
+		
+		} else if(data_type == "builtin") {
+			var builtin_table_code = $(this).find("select.related option:selected").val();
+			
+			if(builtin_table_code == undefined || builtin_table_code == "") {
+				// ERROR
+			} else {
+				columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + builtin_table_code + '"}');
+				return;
+			}
+
+		} else if(data_type == "table") {
+			var table_type = $(this).find("select.related option:selected").val();
+			
+			var table_id = "";
+			if(table_type == "mine") {
+				table_id = $(this).find("select.related_table option:selected").val();
+				
+			} else if(table_type == "others") {
+				table_id = $(this).find("span.related_table").attr('rel');
 			}
 			
-			if(column_parameter != "") {
-				$("form").append('<input type="hidden" name="columns" value="' + column_parameter + '"/>');
+			if(table_id == undefined || table_id == "") {
+				// ERROR
+			} else {
+				columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + table_id + '"}');
+				return;
 			}
 		}
+		
+		columns.push('{"name":"' + column_name + '","type":"' + data_type + '"}');
 	});
+	
+	$(".button_panel .loading").show();
+	
+	$.post("{% url opengis_api_table_create %}", {table_name:table_name,table_description:table_description,table_tags:table_tags,share_level:table_share_level,display_column:display_column,column:columns}, function(data) {
+		$(".button_panel .loading").hide();
+		
+		if(data.response == 'success') {
+			window.location = "http://" + window.location.host + "/my/table/" + table_name + "/";
+		}
+	}, "json");
 }
 </script>
 {% endblock %}
@@ -108,14 +90,12 @@ function dosubmit() {
 <div class="style_table_create">
 	<form action="." method="post" class="std_form">
 		<ul class="form">
-			<li class="long_textbox"><label for="id_table_name">Table Name:</label>{{form.table_name}}{{form.errors.table_name}}</li>
-			<li class="medium_textarea"><label for="id_description">Description:</label>{{form.description}}{{form.errors.description}}</li>
-			<li class="long_textbox"><label for="id_tags">Tags:</label>{{form.tags}}<div class="comment">* Example: thailand,female population,census</div>{{form.errors.tags}}</li>
-			<li><label for="id_share_level">Share Level:</label>{{form.share_level}}{{form.errors.share_level}}</li>
+			<li class="long_textbox"><label for="id_table_name">Table Name:</label><input type="text" name="table_name" /></li>
+			<li class="medium_textarea"><label for="id_description">Description:</label><textarea name="table_description"></textarea></li>
+			<li class="long_textbox"><label for="id_tags">Tags:</label><input type="text" name="table_tags"/><div class="comment">* Example: thailand,female population,census</div></li>
+			<li><label for="id_share_level">Share Level:</label><select name="table_share_level"><option value="1">Private</option><option value="9">Public</option></select></li>
 		</ul>
 		<div class="columns_form">
-			{% if columns_errors %}<ul class="errorlist">{% for error in columns_errors %}<li>{{error}}</li>{% endfor %}</ul>{% endif %}
-			{% if not columns %}
 			<ol>
 				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
 				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
@@ -125,25 +105,20 @@ function dosubmit() {
 				<li class="input"><label>Column</label><input type="text" /><select class="data_type"><option></option>{% generate_data_type_list 0 %}</select><div class="more_inputs"></div><div class="error"></div><div class="clear"></div></li>
 				<li><a href="#" id="add_new_column">Add new column</a></li>
 			</ol>
-			{% else %}
-			<ol>
-				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
-				{% for column in columns %}
-				<li class="input"><label>Column</label><input type="text" value="{{column.name}}"/><select class="data_type"><option></option>{% generate_data_type_list column.type %}</select><div class="more_inputs"></div><div class="error">{{column.error}}</div><div class="clear"></div></li>
-				{% endfor %}
-				<li><a href="#">Add new column</a></li>
-			</ol>
-			{% endif %}
 		</div>
-		<ul class="form display_column_panel" {% if not columns %}style="display:none;"{% endif %}>
+		<ul class="form display_column_panel" style="display:none;">
 			<li>
 				<label for="id_display_column_selector">Display Column:</label>
-				<select id="id_display_column_selector">{% for column in columns %}<option {% ifequal column.name request.POST.display_column %}selected="selected"{% endifequal %}>{{column.name}}</option>{% endfor %}</select>
-				{{form.display_column}}
-				<div class="comment">* Value from which column that will be used in a list when editing</div>{{form.errors.display_column}}
+				<select id="id_display_column_selector"></select>
+				<div class="comment">* Value from which column that will be used in a list when editing</div>
 			</li>
 		</ul>
-		<div class="button_panel"><button type="submit">Create Table</button></div>
+		<div class="button_panel">
+			<button type="submit">Create Table</button>
+			<img src="{{MEDIA_URL}}/images/loading.gif" class="loading" style="display:none;"/>
+		</div>
 	</form>
 </div>
+
+<div id="select_other_user_table_popup" style="display:none;"></div>
 {% endblock %}

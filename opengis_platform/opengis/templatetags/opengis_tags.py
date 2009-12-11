@@ -52,8 +52,17 @@ def print_value(data_row, column_name):
 
 @register.simple_tag
 def print_share_level_html(MEDIA_URL, level_number):
-	if level_number == 9: return '<img src="' + MEDIA_URL + '/images/share_public.png" title="Public Table"/>'
-	return '<img src="' + MEDIA_URL + '/images/icon_blank.png" title="Unknown"/>'
+	if level_number == 9: return '<img src="' + MEDIA_URL + '/images/share_public.png" title="Public Table"/> Public Table'
+	return 'Private Table'
+
+@register.simple_tag
+def print_datetime(datetime):
+	return "%d/%d/%d %02d:%02d" % (datetime.day,datetime.month,datetime.year,datetime.hour,datetime.minute)
+
+@register.simple_tag
+def print_query_column_name(column):
+	if column['display_name']: return column['display_name']
+	return column['name']
 
 @register.simple_tag
 def print_column_data_type(data_type):
@@ -97,6 +106,7 @@ def generate_user_table_list(user_tables):
 		html += '<option value="' + str(user_table.id) + '">' + user_table.table_name + "</option>"
 	return html
 
+
 @register.simple_tag
 def generate_built_in_table_list():
 	html = ""
@@ -105,5 +115,5 @@ def generate_built_in_table_list():
 		html += '<option value="' + table_model.Info.code + '">' + table_model.Info.name + '</option>'
 	
 	return html
-		
+	
 		
