@@ -387,9 +387,8 @@ def api_query_create(request):
 		# Prepare display columns -- hierarchy1.hierarchy2.field_name
 		display_columns = list()
 		for display_column in request.POST.getlist('display'):
-			(column_hierarchy, separator, column_name) = display_column.rpartition('.')
-			display_columns.append({'hierarchy':column_hierarchy,'name':column_name})
-		
+			(column_hierarchy, separator, column_id) = display_column.rpartition('.')
+			display_columns.append({'hierarchy':column_hierarchy,'id':column_id})
 		
 		# Prepare filter columns
 		filter_columns = list()
@@ -404,21 +403,22 @@ def api_query_create(request):
 		
 		# Store display columns
 		for column in display_columns:
-			UserQueryDisplayColumn.objects.create(query=user_query,column_hierarchy=column['hierarchy'],column_name=column['name'])
+			UserQueryDisplayColumn.objects.create(query=user_query,column_hierarchy=column['hierarchy'],column_id=column['id'])
 		
 		# Store filter columns
 		for column in filter_columns:
 			is_variable = "value" not in column
+			
 			UserQueryFilter.objects.create(
 				query=user_query,
-				column_hierarchy='',
-				column_name=UserTableColumn.objects.get(pk=column['column_id']).physical_column_name, # Quick hack!
+				column_hierarchy=column['column_hierarchy'],
+				column_id=column['column_id'],
 				filter_function=column['function'],
 				filter_value=column.get('value'),
 				is_variable=is_variable,
 			)
 
-		return api.APIResponse(api.API_RESPONSE_SUCCESS, result={'id':user_query.id,'name':user_query.query_name})
+		return api.APIResponse(api.API_RESPONSE_SUCCESS, result={'id':user_query.id,'query_name':user_query.query_name})
 		
 	else:
 		return api.APIResponse(api.API_RESPONSE_POSTONLY)
@@ -464,7 +464,12 @@ def api_query_execute(request):
 			result_json = utilities.convert_query_result_to_geojson(request, query_result['columns'], query_result['values'])
 
 		else:
-			result_json = '{"query":"' + query_name + '","columns":["' + '","'.join(query_result['columns']) + '"],"values":' + utilities.json_dumps(query_result['values']) + '}'
+			columns_json = ""
+			for column in query_result['columns']:
+				if columns_json: columns_json = columns_json + ","
+				columns_json = columns_json + '"' + column['name'] + '"'
+			
+			result_json = '{"query":"' + query_name + '","columns":[' + columns_json + '],"values":' + utilities.json_dumps(query_result['values']) + '}'
 		
 		return api.APIResponse(api.API_RESPONSE_SUCCESS, str_result=result_json)
 		
@@ -472,178 +477,186 @@ def api_query_execute(request):
 		return api.APIResponse(api.API_RESPONSE_GETONLY)
 
 def execute_query(user_query, parameters, result_limit=None):
+	column_manager = opengis.TableColumnManager(user_query.starter_table)
+	
 	display_columns = UserQueryDisplayColumn.objects.filter(query=user_query)
-	
-	column_manager = opengis.UserTableColumnManager(user_query.starter_table) # For caching user table columns information (less database hit)
-	
+
 	# Generate 'columns' JSON
 	result_columns = list()
-
+	
 	for display_column in display_columns:
-		column = column_manager.get_column_info(display_column.column_hierarchy, display_column.column_name)
-		column['display_name'] = display_column.display_name
-		result_columns.append(column)
+		if display_column.is_aggregate:
+			column_info = {'id':display_column.column_id,'name':display_column.column_id,'type':sql.TYPE_NUMBER,'physical_name':display_column.column_id,'related_table':''}
+		else:
+			column_info = column_manager.get_column_info(display_column.column_hierarchy, display_column.column_id)
+		
+		if display_column.display_name: column_info['name'] = display_column.display_name
+		column_info['column_hierarchy'] = display_column.column_hierarchy
+		
+		result_columns.append(column_info)
 	
 	# Create Starter Model
 	if user_query.starter_table in REGISTERED_BUILT_IN_TABLES:
 		starter_model = REGISTERED_BUILT_IN_TABLES[user_query.starter_table]
-
+	
 	else:
 		user_table = UserTable.objects.get(pk=user_query.starter_table)
 		table_columns = UserTableColumn.objects.filter(table=user_table)
 
 		starter_model = opengis._create_model(user_table, table_columns)
-
-	data_objects = starter_model.objects.all()
 	
+	data_objects = starter_model.objects.all()
+
 	# Virtual Columns -- WILL DO
 	# Figure out how to store virtual column login in database
 	# Entry.objects.extra(select={'is_recent': "pub_date > '2006-01-01'"})
-	
+
 	# Group By
 	group_by_columns = UserQueryAggregateColumnGroupBy.objects.filter(query=user_query)
 	for group_by in group_by_columns:
-		data_objects = data_objects.values(group_by.column_name)
-	
+		column_info = column_manager.get_column_info('', group_by.column_id)
+		data_objects = data_objects.values(column_info['physical_name'])
+
 	# Aggregate Columns
 	aggregate_columns = UserQueryAggregateColumn.objects.filter(query=user_query)
 	if group_by_columns: # If using 'values', we must use annotate, instead of aggregate
 		for aggregate_column in aggregate_columns:
-			data_objects = data_objects.annotate(query.sql_aggregate(aggregate_column))
+			column_info = column_manager.get_column_info('', aggregate_column.column_id)
+			data_objects = data_objects.annotate(query.sql_aggregate(aggregate_column, column_info))
 	else:
 		for aggregate_column in aggregate_columns:
-			data_objects = data_objects.aggregate(query.sql_aggregate(aggregate_column))
-	
+			column_info = column_manager.get_column_info('', aggregate_column.column_id)
+			data_objects = data_objects.aggregate(query.sql_aggregate(aggregate_column, column_info))
+
 	# Filter
 	for filter in UserQueryFilter.objects.filter(query=user_query):
 		if filter.is_variable:
 			filter.filter_value = parameters.get(filter.filter_value)
 			if not filter.filter_value: continue
-		
-		column_info = column_manager.get_column_info(filter.column_hierarchy, filter.column_name)
-		data_objects = query.sql_filter(filter, data_objects, column_info)
-	
+
+		column_info = column_manager.get_column_info(filter.column_hierarchy, filter.column_id)
+		data_objects = query.sql_filter(filter, data_objects, column_manager)
+
 	# Order by
 	order_by_columns = UserQueryOrderByColumn.objects.filter(query=user_query).order_by('order_priority') # Less has more priority
-	
+
 	order_fields = list()
 	for order_by_column in order_by_columns:
 		if order_by_column.column_hierarchy:
 			column_hierarchy = order_by_column.column_hierarchy.replace(".", "__") + "__"
 		else:
 			column_hierarchy = ""
-		
+
 		order_fields.append('-' if order_by_column.is_desc else '' + column_hierarchy + order_by_column.column_name)
-	
+
 	if order_fields: data_objects = data_objects.order_by(*order_fields)
 	
+	# Distinct
 	if user_query.is_distinct:
-		for display_column in display_columns:
-			if display_column.column_hierarchy:
-				column_hierarchy = display_column.column_hierarchy.replace(".", "__") + "__"
+		args = list()
+		for result_column in result_columns:
+			if result_column['column_hierarchy']:
+				column_hierarchy = result_column['column_hierarchy'].replace(".", "__") + "__"
 			else:
 				column_hierarchy = ""
 			
-			data_objects = data_objects.values(column_hierarchy + display_column.column_name)
+			args.append(column_hierarchy + result_column['physical_name'])
 		
+		data_objects = data_objects.values(*args)
 		data_objects = data_objects.distinct()
 	
 	# Dump result in a list of list
 	result = list()
-	
+
 	if aggregate_columns and not group_by_columns: # using aggregate without grouping by will have result as a dict
 		result_row = list()
 		
-		for display_column in display_columns:
+		for result_column in result_columns:
 			try:
-				result_row.append(data_objects[display_column.column_name])
+				result_row.append(data_objects[result_column['physical_name']])
 			except KeyError:
-				pass
-		
+				result_row.append("")
+
 		result.append(result_row)
-	
+
 	elif user_query.is_distinct: # Using distinct, result will be a list of dict that has a key like 'link1__link2__column1'
 		for datum in data_objects:
 			result_row = list()
-			
-			for display_column in display_columns:
-				if display_column.column_hierarchy:
-					column_hierarchy = display_column.column_hierarchy.replace(".", "__") + "__"
+
+			for result_column in result_columns:
+				if result_column['column_hierarchy']:
+					column_hierarchy = result_column['column_hierarchy'].replace(".", "__") + "__"
 				else:
 					column_hierarchy = ""
-				
-				result_row.append(datum[column_hierarchy + display_column.column_name])
-			
+
+				result_row.append(datum[column_hierarchy + result_column['physical_name']])
+
 			if result_row: result.append(result_row)
-	
+
 	else:
-	 	for datum in data_objects:
-			result_row = list()
-
-			for display_column in display_columns:
-				if display_column.column_hierarchy:
-					hierarchy_list = display_column.column_hierarchy.split(".")
-
-					if not group_by_columns:
-						try:
-							attr = getattr(datum, hierarchy_list[0])
-							for hierarchy in hierarchy_list[1:]: attr = getattr(attr, hierarchy)
-							result_row.append(getattr(attr, display_column.column_name))
-						except:
-							result_row.append("") # something bad happened, return empty string instead
-					
-					else: # result return as a list of dict, and display column has hierarchy information
-
-						related_table = column_manager.get_column_info('', hierarchy_list[0])['related_table']
-
-						for index, hierarchy in enumerate(hierarchy_list):
-
-							if index == 0:
-								related_table = column_manager.get_column_info('', hierarchy_list[0])['related_table']
-
-							else:
-								column_info = column_mapping[hierarchy]
-
-								if type(column_info).__name__ == 'dict':
-									related_table = column_info['related_table']
-								else:
-									related_table = column_info.related_table
-
-							if related_table in REGISTERED_BUILT_IN_TABLES:
-								hierarchy_model_object = REGISTERED_BUILT_IN_TABLES[related_table]
-								column_mapping = hierarchy_model_object.columns
-
-							else:
-								hierarchy_user_table = UserTable.objects.get(pk=related_table)
-								hierarchy_table_columns = UserTableColumn.objects.filter(table=user_table)
-
-								column_mapping = dict()
-								for table_column in hierarchy_table_columns: column_mapping[table_column.physical_column_name] = table_column
-
-								hierarchy_model_object = opengis._create_model(hierarchy_user_table, hierarchy_table_columns)
-
-							hierarchy_data = hierarchy_model_object.objects.get(pk=datum[hierarchy])
-
-						result_row.append(getattr(hierarchy_data, display_column.column_name))
-
-				else:
-					try:
-						result_row.append(getattr(datum, display_column.column_name))
-					except:
-						try:
-							result_row.append(datum[display_column.column_name])
-						except:
-							result_row.append("") # Can't find a proper value for you, give you an empty string instead, ok?
-
-			if result_row: result.append(result_row)
+		result = _extract_query_result(data_objects, result_columns, column_manager)
 
 	# Result limitation -- either define it in user query table or 'limit' parameter in request URL
 	if user_query.result_limit or result_limit:
 		limit = user_query.result_limit
 		if result_limit: limit = int(result_limit)
 		result = result[0:limit]
-	
+
 	return {'columns':result_columns,'values':result}
+
+
+def _extract_query_result(query_result, result_columns, column_manager):
+	result = list()
+	
+	for datum in query_result:
+		result_row = list()
+		
+		for result_column in result_columns:
+			if result_column['column_hierarchy']:
+				hierarchy_list = result_column['column_hierarchy'].split(".")
+				
+				if type(datum).__name__ != 'dict':
+					try:
+						attr = datum
+						for hierarchy in hierarchy_list: attr = getattr(attr, hierarchy)
+						result_row.append(getattr(attr, result_column['physical_name']))
+					except:
+						result_row.append("")
+					
+				else: # query_result returns as a list of dict (cause by using GROUP BY)
+					
+					growing_hierarchy = ""
+					for index, hierarchy in enumerate(hierarchy_list):
+						related_table = column_manager.get_column_info_by_name(growing_hierarchy, hierarchy)['related_table']
+						
+						if growing_hierarchy: growing_hierarchy = growing_hierarchy + "."
+						growing_hierarchy = growing_hierarchy + hierarchy
+						
+						if related_table in REGISTERED_BUILT_IN_TABLES:
+							hierarchy_model_object = REGISTERED_BUILT_IN_TABLES[related_table]
+							
+						else:
+							hierarchy_user_table = UserTable.objects.get(pk=related_table)
+							hierarchy_table_columns = UserTableColumn.objects.filter(table=hierarchy_user_table)
+							
+							hierarchy_model_object = opengis._create_model(hierarchy_user_table, hierarchy_table_columns)
+						
+						hierarchy_data = hierarchy_model_object.objects.get(pk=datum[hierarchy])
+
+					result_row.append(getattr(hierarchy_data, result_column['physical_name']))
+					
+			else:
+				try:
+					result_row.append(getattr(datum, result_column['physical_name']))
+				except:
+					try:
+						result_row.append(datum[result_column['physical_name']])
+					except:
+						result_row.append("")
+		
+		if result_row: result.append(result_row)
+
+	return result
 
 def api_testbed(request):
 	delete_column_id = request.GET.get("id")

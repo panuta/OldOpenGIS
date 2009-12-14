@@ -5,78 +5,8 @@
 <script type="text/javascript" src="{{MEDIA_URL}}/scripts/scripts.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-	$("select.starter_selector").change(function() {
-		var select_object = $(this);
-		var table_type = $(this).find("option:selected").val();
-		
-		$(this).parent().find("select.table_selector").remove();
-		
-		if(table_type == "mine") {
-			$.getJSON("{% url opengis_api_table_list %}", function(data) {
-				var list_html = '';
-				for(var i in data.result) {
-					list_html += '<option value="' + data.result[i].id + '">' + data.result[i].name + '</option>';
-				}
-				
-				select_object.parent().append('<select class="table_selector"><option></option>' + list_html + '</select>');
-				
-				select_object.parent().find("select.table_selector").change(function() {
-					loadMasterTables($(this).find("option:selected").val());
-				});
-			});
-		
-		} else if(table_type == "others") {
-			
-			
-			
-		} else if(table_type == "builtin") {
-			$(this).parent().append('<select class="table_selector"><option></option>{% generate_built_in_table_list %}</select>');
-			
-			$(this).parent().find("select.table_selector").change(function() {
-				loadMasterTables($(this).find("option:selected").val());
-			});
-		}
-	
-	});
-	
-	$("form button[type='submit']").click(function() {
-		submit();
-		return false;
-	});
+	initialize_CreateQueryPage();
 });
-
-function loadMasterTables(table_code) {
-	$.getJSON("{% url opengis_api_table_info %}?table_code=" + table_code, function(data) {
-		if(data.response == "success") {
-			$("#starter_panel").html(drawTable(data.result[0]) + '<div class="manage_filters_popup" style="display:none;"></div>');
-			
-			$("#starter_panel a.manage-filters").click(function() {
-				show_construct_query_manage_filters_popup($(this));
-				
-				return false;
-			});
-		}
-		
-		$("child-layer").remove();
-	});
-}
-
-function loadChildTables(table_code) {
-	
-}
-
-function drawTable(table_info) {
-	var html = '<table rel="' + table_info.id + '"><tr><th>' + table_info.name + '</th></tr><tr><td class="actions"><a href="#" class="manage-filters" title="Filter"><img src="{{MEDIA_URL}}/images/query_filter.png"/>Filter</a> <a href="#" title="Aggregate"><img src="{{MEDIA_URL}}/images/query_aggregate.png"/>Aggregate</a> <a href="#" title="Sort By"><img src="{{MEDIA_URL}}/images/query_sort.png"/>Sort</a></td></tr>';
-	var selector = '';
-	
-	for(var i=0; i<table_info.columns.length; i++) {
-		html += '<tr><td rel="' + table_info.columns[i].id + '"><input type="checkbox" class="display" rel="' + table_info.columns[i].physical_name + '"/> ' + table_info.columns[i].name + '</td></tr>'
-		selector += '<option value="' + table_info.columns[i].id + '">' + table_info.columns[i].name + '</option>';
-	}
-	
-	html += '</table><select class="rendered_columns" style="display:none;"><option></option>' + selector + '</select>';
-	return html;
-}
 
 function submit() {
 	var query_name = $("form input[name='query_name']").val();
@@ -87,14 +17,19 @@ function submit() {
 	$(".query_builder .tables input.display[type='checkbox']:checked").each(function() {
 		var parentTable = $(this).closest('table');
 		
+		var column_id = $(this).closest("td").attr("rel");
+		
 		if(parentTable.parent().attr('id') != "starter_panel") {
-			display_columns.push(parentTable.attr('rel') + "." + $(this).attr('rel'));	
+			display_columns.push(parentTable.attr('rel') + "." + column_id);
 		} else {
-			display_columns.push($(this).attr('rel'));
+			display_columns.push(column_id);
 		}
 	});
 	
-	console.log(display_columns);
+	if(display_columns.length == 0) {
+		alert("Select at least one display column!");
+		return false;
+	}
 	
 	// Filters
 	var filter_columns = new Array();
@@ -118,9 +53,9 @@ function submit() {
 	$.post("{% url opengis_api_query_create %}", {query_name:query_name, query_description:query_description, starter_table:starter_table, display:display_columns, filter:filter_columns}, function(data) {
 		$(".button_panel .loading").hide();
 		
-		/*if(data.response == 'success') {
-			window.location = "http://" + window.location.host + "/my/table/" + data.result.table_name + "/";
-		}*/
+		if(data.response == 'success') {
+			window.location = "http://" + window.location.host + "/my/query/" + data.result.query_name + "/";
+		}
 	}, "json");
 }
 </script>
@@ -162,4 +97,6 @@ function submit() {
 		<li><a href="#" class="add-filter">Add new filter</a></li>
 	</ul>
 </div>
+
+<div id="select_other_user_table_popup" style="display:none;"></div>
 {% endblock %}

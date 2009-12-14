@@ -61,7 +61,6 @@ def print_datetime(datetime):
 
 @register.simple_tag
 def print_query_column_name(column):
-	if column['display_name']: return column['display_name']
 	return column['name']
 
 @register.simple_tag

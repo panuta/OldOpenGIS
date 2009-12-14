@@ -159,6 +159,9 @@ a:hover {background-color:#369;color:#FFF;}
 .style_query_create .starter_table label {font-size:108%;margin-right:10px;}
 .style_query_create .starter_table select {margin-right:10px;}
 
+.style_query_create .starter_table span.related_table {border:1px solid #CCC;background-color:#EEE;padding:2px 15px;}
+.style_query_create .starter_table span.related_table a {margin-left:10px;}
+
 .style_query_create .query_builder {border-top:1px solid #CCC;border-bottom:1px solid #CCC;padding:15px 0px 10px;}
 .style_query_create .query_builder .tables {margin:20px 0px;}
 .style_query_create .query_builder table {}
@@ -167,19 +170,38 @@ a:hover {background-color:#369;color:#FFF;}
 .style_query_create .query_builder table td input {margin-right:8px;vertical-align:top;}
 .style_query_create .query_builder table td img {margin-right:5px;cursor:pointer;vertical-align:text-bottom;}
 .style_query_create .query_builder table td span {margin-left:20px;color:#999;font-style:italic;}
-.style_query_create .query_builder table td.actions {padding:10px 30px 10px 10px;background-color:#FFD;}
-.style_query_create .query_builder table td.actions a:link,.style_query_create .query_builder table td.actions a:visited,.style_query_create .query_builder table td.actions a:active {margin-right:10px;text-decoration:none;}
-.style_query_create .query_builder table td.actions a:hover {background:none;color:#369;}
+.style_query_create .query_builder table td.actions {padding:5px 30px 10px 10px;background-color:#666;}
+.style_query_create .query_builder table td.actions a:link,.style_query_create .query_builder table td.actions a:visited,.style_query_create .query_builder table td.actions a:active {margin-right:10px;text-decoration:none;color:#FFF;}
+.style_query_create .query_builder table td.actions a:hover {background:none;color:#FFC;}
 .style_query_create .query_builder table td.actions a img {margin-right:5px;}
+.style_query_create .query_builder table td.selected {background-color:#FFC;font-weight:bold;}
+
+
+
 
 
 .manage_filters_popup {border:3px solid #369;background-color:#F3F3F3;padding:15px;position:absolute;min-width:600px;}
 .manage_filters_popup h4 {font-size:123.1%;font-weight:bold;color:#C63;margin-bottom:15px;border-bottom:1px solid #CCC;padding-bottom:5px;padding-right:100px;}
+.manage_filters_popup .select_function_panel {margin-bottom:10px;}
+.manage_filters_popup .select_function_panel img {vertical-align:text-bottom;margin-right:5px;}
+.manage_filters_popup .select_function_panel select {margin-left:10px;}
 .manage_filters_popup ul.filters {margin-bottom:10px;}
-.manage_filters_popup ul.filters li.filter {border:1px dashed #999;background-color:#FFF;padding:10px 15px;margin-bottom:10px;}
-.manage_filters_popup ul.filters li.filter .function {margin-right:20px;}
+.manage_filters_popup ul.filters li.filter {border:1px dashed #999;background-color:#FFF;margin-bottom:10px;}
+
+.manage_filters_popup ul.filters li.filter table {}
+.manage_filters_popup ul.filters li.filter td {border:none;padding:0px;vertical-align:top;}
+.manage_filters_popup ul.filters li.filter td.cell_select_column {padding:5px 10px;}
+.manage_filters_popup ul.filters li.filter td.cell_text {padding:5px 8px;}
+.manage_filters_popup ul.filters li.filter td.cell_parameter {padding:5px 10px;}
+.manage_filters_popup ul.filters li.filter td.cell_parameter div {margin-bottom:5px;}
+.manage_filters_popup ul.filters li.filter .remove_panel {text-align:right;padding:5px 10px;}
+
+
+/*.manage_filters_popup ul.filters li.filter .function {margin-right:20px;}
 .manage_filters_popup ul.filters li.filter .parameter-checkbox {margin-left:10px;}
-.manage_filters_popup ul.filters li.filter .remove-filter {float:right;}
+.manage_filters_popup ul.filters li.filter .remove-filter {float:right;}*/
+
+
 
 .manage_filters_popup .popup_button_panel {}
 .manage_filters_popup {}

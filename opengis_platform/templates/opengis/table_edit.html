@@ -5,63 +5,10 @@
 <script type="text/javascript" src="{{MEDIA_URL}}/scripts/scripts.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-	$(".columns_form select.data_type").change(function() {
-		onchange_construct_table_column_type($(this));
-	});
-	
-	$(".columns_form input[type='text']").change(function() {
-		onchange_construct_table_column_name();
-	});
-	
-	/*
-	// Add new column click event
-	$("#add_new_column").click(function() {
-		click_construct_table_add_column($(this));
-		return false;
-	});
-	*/
-	
-	/*
-	$(".columns_form .delete-column").click(function() {
-		undo_redo_delete_column($(this));
-		return false;
-	});
-	*/
-	
-	$("form .button_panel button[type='submit']").click(function() {
-		submit();
-		return false;
-	});
+	initialize_EditTablePage();
 });
 
-function undo_redo_delete_column(clickObject) {
-	if(clickObject.parent().find(".mark_as_deleted").length == 0) {
-		if($("#id_display_column_selector option:selected").text() == clickObject.parent().parent().find("input[name='column_name']").val()) {
-			alert("Cannot delete a column that currently used in display column");
-			
-		} else {
-			clickObject.parent().html('<span class="mark_as_deleted">To be deleted</span> <a href="#">Undo</a>').find("a").click(function() {
-				undo_redo_delete_column($(this));
-				return false;
-			});
-		}
-		
-	} else {
-		clickObject.parent().html('<a href="#" class="delete-column">Delete</a>').find("a").click(function() {
-			undo_redo_delete_column($(this));
-			return false;
-		});
-	}
-}
-
 function submit() {
-	/*
-	Step 1: Rename Columns
-	Step 2: Add Columns
-	Step 3: Update Table
-	Step 4: Delete Columns
-	*/
-	
 	// Gathering data //
 	var table_name = $("form input[name='table_name']").val();
 	var table_description = $("form textarea[name='table_description']").val();
@@ -70,56 +17,15 @@ function submit() {
 	var display_column = $("#id_display_column_selector option:selected").val();
 	
 	var rename_columns = new Array();
-	var delete_columns = new Array();
-	var add_columns = new Array();
 	
 	$(".columns_form li.input").each(function() {
 		var column_id = $(this).attr("rel");
 		
-		if(column_id != undefined && column_id != "") {
-			if($(this).find(".mark_as_deleted").length != 0) {
-				delete_columns.push($(this).attr("rel"));
+		var column_name = $(this).find("input").val();
+		var prev_column_name = $(this).find("input").attr("rel");
 
-			} else {
-				var column_name = $(this).find("input").val();
-				var prev_column_name = $(this).find("input").attr("rel");
-
-				if(column_name != prev_column_name) {
-					rename_columns.push(column_id + ':' + column_name);
-				}
-			}
-			
-		} else {
-			var column_name = $(this).find("input").val();
-			var data_type = $(this).find("select.data_type option:selected").val();
-			
-			if(column_name != "") {
-				if(data_type == "datetime") {
-					var datetime_type = $(this).find("select.related option:selected").val();
-					data_type = datetime_type;
-
-				} else if(data_type == "builtin") {
-					var builtin_table_code = $(this).find("select.related option:selected").val();
-					add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + builtin_table_code + '"}');
-					return;
-
-				} else if(data_type == "table") {
-					var table_type = $(this).find("select.related option:selected").val();
-
-					var table_id = "";
-					if(table_type == "mine") {
-						table_id = $(this).find("select.related_table option:selected").val();
-
-					} else if(table_type == "others") {
-						table_id = $(this).find("span.related_table").attr('rel');
-					}
-
-					add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + table_id + '"}');
-					return;
-				}
-
-				add_columns.push('{"name":"' + column_name + '","type":"' + data_type + '"}');
-			}
+		if(column_name != prev_column_name) {
+			rename_columns.push(column_id + ':' + column_name);
 		}
 	});
 	
@@ -127,12 +33,8 @@ function submit() {
 	$(".button_panel .loading").show();
 	
 	do_rename_columns(rename_columns, function() {
-		do_add_columns(add_columns, function() {
-			do_update_table(table_name, table_description, table_tags, table_share_level, display_column, function() {
-				do_delete_columns(delete_columns, function() {
-					window.location = "http://" + window.location.host + "/my/table/" + table_name + "/";
-				});
-			});
+		do_update_table(table_name, table_description, table_tags, table_share_level, display_column, function() {
+			window.location = "http://" + window.location.host + "/my/table/" + table_name + "/";
 		});
 	});
 }
@@ -140,18 +42,6 @@ function submit() {
 function do_rename_columns(rename_columns, callback) {
 	if(rename_columns.length > 0) {
 		$.post("{% url opengis_api_table_rename_columns %}", {column:rename_columns}, function(data) {
-			
-			callback();
-		});
-	} else {
-		callback();
-	}
-}
-
-function do_add_columns(add_columns, callback) {
-	if(add_columns.length > 0) {
-		$.post("{% url opengis_api_table_add_columns %}", {column:add_columns}, function(data) {
-
 			callback();
 		});
 	} else {
@@ -161,20 +51,8 @@ function do_add_columns(add_columns, callback) {
 
 function do_update_table(table_name, table_description, table_tags, share_level, display_column, callback) {
 	$.post("{% url opengis_api_table_edit %}", {table_id:{{user_table.id}},table_name:table_name,table_description:table_description,table_tags:table_tags,share_level:share_level,display_column:display_column}, function(data) {
-
 		callback();
 	});
-}
-
-function do_delete_columns(delete_columns, callback) {
-	if(delete_columns.length > 0) {
-		$.post("{% url opengis_api_table_delete_columns %}", {column:delete_columns}, function(data) {
-
-			callback();
-		});
-	} else {
-		callback();
-	}
 }
 
 </script>
@@ -195,9 +73,8 @@ function do_delete_columns(delete_columns, callback) {
 			<ol>
 				<li class="caption"><div class="head_column_name">Column Name</div><div class="head_data_type">Data Type</div><div class="clear"></div></li>
 				{% for column in user_table.columns %}
-				<li class="input" rel="{{column.id}}"><label>Column</label><input name="column_name" type="text" value="{{column.column_name}}" rel="{{column.column_name}}"/><div class="data_type">{% print_column_data_type column.data_type %}</div><div class="action"><!-- <a href="#" class="delete-column">Delete</a> --></div><div class="error"></div><div class="clear"></div></li>
+				<li class="input" rel="{{column.id}}"><label>Column</label><input name="column_name" type="text" value="{{column.column_name}}" rel="{{column.column_name}}"/><div class="data_type">{% print_column_data_type column.data_type %}</div><div class="action"></div><div class="error"></div><div class="clear"></div></li>
 				{% endfor %}
-				<!-- <li><a href="#" id="add_new_column">Add new column</a></li> -->
 			</ol>
 		</div>
 		<ul class="form display_column_panel">

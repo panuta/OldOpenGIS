@@ -134,14 +134,14 @@ class UserQuery(models.Model):
 class UserQueryDisplayColumn(models.Model):
 	query = models.ForeignKey(UserQuery)
 	column_hierarchy = models.CharField(max_length=512, null=True, blank=True)
-	column_name = models.CharField(max_length=512)
+	column_id = models.CharField(max_length=512)
 	is_aggregate = models.BooleanField(default=False)
 	display_name = models.CharField(max_length=512, null=True, blank=True)
 
 class UserQueryFilter(models.Model):
 	query = models.ForeignKey(UserQuery)
 	column_hierarchy = models.CharField(max_length=512, null=True, blank=True)
-	column_name = models.CharField(max_length=512)
+	column_id = models.CharField(max_length=512)
 	filter_function = models.CharField(max_length=128)
 	filter_value = models.CharField(max_length=512, null=True, blank=True)
 	is_variable = models.BooleanField(default=False)
@@ -149,16 +149,16 @@ class UserQueryFilter(models.Model):
 class UserQueryAggregateColumn(models.Model):
 	query = models.ForeignKey(UserQuery)
 	aggregate_func = models.IntegerField(default=0)
-	column_name = models.CharField(max_length=512)
+	column_id = models.CharField(max_length=512)
 
 class UserQueryAggregateColumnGroupBy(models.Model):
 	query = models.ForeignKey(UserQuery)
-	column_name = models.CharField(max_length=512)
+	column_id = models.CharField(max_length=512)
 
 class UserQueryOrderByColumn(models.Model):
 	query = models.ForeignKey(UserQuery)
 	column_hierarchy = models.CharField(max_length=512, null=True, blank=True)
-	column_name = models.CharField(max_length=512)
+	column_id = models.CharField(max_length=512)
 	order_priority = models.IntegerField(default=0) # Lesser number means higher priority
 	is_desc = models.BooleanField(default=False)
 

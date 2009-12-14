@@ -62,87 +62,155 @@ def _create_model(user_table, user_table_columns):
 
 	return model_class
 
-# Caching manager for user table columns
-class UserTableColumnManager(object):
+class TableColumnManager(object): # New manager
 
 	def __init__(self, starter_table):
 		self.starter_table = starter_table
-		
-		starter_column_mapping = dict()
-		
+
 		if starter_table in REGISTERED_BUILT_IN_TABLES:
 			self.is_start_with_built_in = True
-			self.columns_cache = None
-			
+			self.named_columns_cache = None
+
 		else:
-			# TODO: Check if starter table is exist
-			
+			named_column_mapping = dict()
+
 			for table_column in UserTableColumn.objects.filter(table=UserTable(pk=starter_table)):
-				starter_column_mapping[table_column.physical_column_name] = table_column
-			
+				named_column_mapping[table_column.physical_column_name] = table_column
+
 			self.is_start_with_built_in = False
-			self.columns_cache = {starter_table:starter_column_mapping}
-	
-	
-	def get_column_info(self, column_hierarchy, column_name):
-	
+			self.named_columns_cache = {starter_table:named_column_mapping}
+
+	def get_column_info(self, column_hierarchy, column_id):
 		if self.is_start_with_built_in:
 			column_mapping = REGISTERED_BUILT_IN_TABLES[self.starter_table].Info.columns
-			
+
 			for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
 				column_info = column_mapping[hierarchy]
 				column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related_table']].Info.columns
-		
+
 			return {
+				'id':column_mapping[column_id]['physical_name'],
+				'name':column_mapping[column_id]['name'],
+				'type':column_mapping[column_id]['type'],
+				'physical_name':column_mapping[column_id]['physical_name'],
+				'related_table':column_mapping[column_id]['related_table']
+			}
+			
+		else:
+			try:
+				column_id = int(column_id)
+			
+			except ValueError: # Column in built-in table
+				column_mapping = self.named_columns_cache[self.starter_table]
+				
+				BUILT_IN_TABLE_CHAIN_STARTED = False
+				
+				for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
+					if not BUILT_IN_TABLE_CHAIN_STARTED:
+						column_info = column_mapping[hierarchy]
+					
+						if sql.TYPE_USER_TABLE == column_info.data_type:
+							if column_info.related_table not in self.named_columns_cache: # Not in cache
+								column_mapping = dict()
+								for table_column in UserTableColumn.objects.filter(table=UserTable(pk=column_info.related_table)):
+									column_mapping[str(table_column.id)] = table_column
+								self.named_columns_cache[column_info.related_table] = column_mapping
+
+							else:
+								column_mapping = self.named_columns_cache[column_info.related_table]
+						else:
+							BUILT_IN_TABLE_CHAIN_STARTED = True
+							column_mapping = REGISTERED_BUILT_IN_TABLES[column_info.related_table].Info.columns
+					
+					else:
+						column_info = column_mapping[hierarchy]
+						column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related']].Info.columns
+
+				if BUILT_IN_TABLE_CHAIN_STARTED: # Column data from built in table columns dict
+					return {
+						'id':column_mapping[column_id]['physical_name'],
+						'name':column_mapping[column_id]['name'],
+						'type':column_mapping[column_id]['type'],
+						'physical_name':column_mapping[column_id]['physical_name'],
+						'related_table':column_mapping[column_id]['related_table'],
+					}
+
+				else: # Column data from UserTableColumn model
+					return {
+						'id':column_mapping[column_id].id,
+						'name':column_mapping[column_id].column_name,
+						'type':column_mapping[column_id].data_type,
+						'physical_name':column_mapping[column_id].physical_column_name,
+						'related_table':column_mapping[column_id].related_table,
+					}
+			
+			else: # Column in user-defined table (because column_id is integer)
+				column_info = UserTableColumn.objects.get(pk=column_id)
+				return {
+					'id':column_info.id,
+					'name':column_info.column_name,
+					'type':column_info.data_type,
+					'physical_name':column_info.physical_column_name,
+					'related_table':column_info.related_table,
+				}
+	
+	def get_column_info_by_name(self, column_hierarchy, column_name): # column_name must be physical column name
+		if self.is_start_with_built_in:
+			column_mapping = REGISTERED_BUILT_IN_TABLES[self.starter_table].Info.columns
+
+			for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
+				column_info = column_mapping[hierarchy]
+				column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related_table']].Info.columns
+
+			return {
+				'id':column_mapping[column_name]['physical_name'],
 				'name':column_mapping[column_name]['name'],
 				'type':column_mapping[column_name]['type'],
 				'physical_name':column_mapping[column_name]['physical_name'],
 				'related_table':column_mapping[column_name]['related_table']
-				}
-		
+			}
+
 		else:
-			column_mapping = self.columns_cache[self.starter_table]
+			column_mapping = self.named_columns_cache[self.starter_table]
 			
 			BUILT_IN_TABLE_CHAIN_STARTED = False
-			
+
 			for hierarchy in column_hierarchy.split(".") if column_hierarchy else list():
 				if not BUILT_IN_TABLE_CHAIN_STARTED:
 					column_info = column_mapping[hierarchy]
-				
+					
 					if sql.TYPE_USER_TABLE == column_info.data_type:
-						if column_info.related_table not in self.columns_cache: # Not in cache
+						if column_info.related_table not in self.named_columns_cache: # Not in cache
 							column_mapping = dict()
 							for table_column in UserTableColumn.objects.filter(table=UserTable(pk=column_info.related_table)):
 								column_mapping[table_column.physical_column_name] = table_column
-							self.columns_cache[column_info.related_table] = column_mapping
-						
+							self.named_columns_cache[column_info.related_table] = column_mapping
+
 						else:
-							column_mapping = self.columns_cache[column_info.related_table]
-				
+							column_mapping = self.named_columns_cache[column_info.related_table]
+
 					elif sql.TYPE_BUILT_IN_TABLE == column_info.data_type:
 						BUILT_IN_TABLE_CHAIN_STARTED = True
 						column_mapping = REGISTERED_BUILT_IN_TABLES[column_info.related_table].Info.columns
-				
+
 				else:
 					column_info = column_mapping[hierarchy]
 					column_mapping = REGISTERED_BUILT_IN_TABLES[column_info['related']].Info.columns
-			
-			if BUILT_IN_TABLE_CHAIN_STARTED:
-				# Column data from built in table columns dict
+
+			if BUILT_IN_TABLE_CHAIN_STARTED: # Column data from built in table columns dict
 				return {
-					'name':column_mapping[column_name]['name'], 
-					'type':column_mapping[column_name]['type'], 
-					'physical_name':column_mapping[column_name]['physical_name'], 
-					'related_table':column_mapping[column_name]['related_table']
-					}
-			
-			else:
-				# Column data from UserTableColumn model
+					'id':column_mapping[column_name]['physical_name'],
+					'name':column_mapping[column_name]['name'],
+					'type':column_mapping[column_name]['type'],
+					'physical_name':column_mapping[column_name]['physical_name'],
+					'related_table':column_mapping[column_name]['related_table'],
+				}
+
+			else: # Column data from UserTableColumn model
 				return {
-					'name':column_mapping[column_name].column_name, 
-					'type':column_mapping[column_name].data_type, 
-					'physical_name':column_mapping[column_name].physical_column_name, 
+					'id':column_mapping[column_name].id,
+					'name':column_mapping[column_name].column_name,
+					'type':column_mapping[column_name].data_type,
+					'physical_name':column_mapping[column_name].physical_column_name,
 					'related_table':column_mapping[column_name].related_table,
-					}
-
-
+				}

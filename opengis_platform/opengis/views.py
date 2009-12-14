@@ -190,8 +190,6 @@ def view_user_query(request, username, query_name):
 	user_query = get_object_or_404(UserQuery, account=account, query_name=query_name)
 	query_result = api.execute_query(user_query, request.GET)
 	
-	print query_result
-	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "query_view.html", {'account':account, 'user_query':user_query, 'query_result':query_result}, context_instance=RequestContext(request))
 
 def visualize_user_query(request, username, query_name):
