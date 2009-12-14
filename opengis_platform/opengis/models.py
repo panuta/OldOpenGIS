@@ -40,9 +40,9 @@ class ThailandRegion(models.Model):
 				'name':'Region','physical_name':'region','type':sql.TYPE_REGION,'related_table':'',
 			},
 		}
-		
 
 class ThailandProvince(models.Model):
+	geocode = models.IntegerField()
 	name = models.CharField(max_length=256)
 	name_th = models.CharField(max_length=256)
 	region = models.MultiPolygonField(null=True)
@@ -61,6 +61,9 @@ class ThailandProvince(models.Model):
 		columns = {
 			'id':{
 				'name':'ID','physical_name':'id','type':sql.TYPE_SERIAL,'related_table':'',
+			},
+			'geocode':{
+				'name':'GeoCode','physical_name':'geocode','type':sql.TYPE_NUMBER,'related_table':'',
 			},
 			'name':{
 				'name':'Name','physical_name':'name','type':sql.TYPE_CHARACTER,'related_table':'',

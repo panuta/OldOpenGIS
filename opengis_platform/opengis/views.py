@@ -116,6 +116,25 @@ def edit_user_table(request, table_name):
 @login_required
 def import_user_table(request, table_name):
 	account = Account.objects.get(user=request.user)
+
+	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
+
+	if request.method == "POST":
+		form = ImportDataToTableForm(request.POST, request.FILES)
+		if form.is_valid():
+			api.import_table(user_table, account, request)
+
+			return redirect(reverse('opengis_import_my_table', args=[table_name]))
+
+	else:
+		form = ImportDataToTableForm(auto_id=False)
+
+	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
+
+"""
+@login_required
+def import_user_table(request, table_name):
+	account = Account.objects.get(user=request.user)
 	
 	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
 	
@@ -169,6 +188,7 @@ def import_user_table(request, table_name):
 		form = ImportDataToTableForm(auto_id=False)
 	
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
+"""
 
 def search_public_table(request):
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_search.html", {}, context_instance=RequestContext(request))
@@ -236,6 +256,7 @@ def load_shape(request):
 	ds = DataSource('/Users/apple/Projects/OpenGIS/OpenGIS/opengis_platform/files/shape/thailand_province/changwat_region_Project.shp')
 
 	mapping = {
+		'geocode' : 'CODE',
 	    'name_th' : 'TNAME',
 	    'name' : 'ENAME',
 	    'region' : 'POLYGON',

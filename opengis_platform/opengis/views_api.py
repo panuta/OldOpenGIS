@@ -1,3 +1,6 @@
+import datetime, time
+import csv
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import connection, transaction
@@ -372,6 +375,97 @@ def api_table_list(request):
 	else:
 		return api.APIResponse(api.API_RESPONSE_GETONLY)
 
+def api_table_import(request):
+	if request.method == 'POST':
+		import_table(request)
+		
+		return api.APIResponse(api.API_RESPONSE_SUCCESS, result=result)
+	
+	else:
+		return api.APIResponse(api.API_RESPONSE_POSTONLY)
+
+def import_table(user_table, account, request):
+	temp_csv_file = settings.TEMP_CSV_PATH + '/temp_' + str(account.user.id) + "_" + str(long(round(time.time()))) + '.csv'
+	
+	destination = open(temp_csv_file, 'wb')
+	for chunk in request.FILES['file'].chunks(): destination.write(chunk)
+	destination.close()
+	
+	destination = open(temp_csv_file, 'rb')
+	csv_reader = csv.reader(destination)
+	
+	table_columns = UserTableColumn.objects.filter(table=user_table)
+	
+	target_model = opengis._create_model(user_table, table_columns)
+	target_model.objects.all().delete()
+	
+	column_mapping = list()
+	
+	for row in csv_reader:
+		if not column_mapping: # csv.reader object is unsubscriptable
+			
+			# Map logical column name used in CSV to physical database column name
+			for index, column_name in enumerate(row):
+				(parent_column, separator, child_column) = column_name.partition("---")
+				column_dict = dict()
+				
+				if child_column:
+					for table_column in table_columns:
+						if table_column.column_name == parent_column:
+							column_dict['physical_column_name'] = table_column.physical_column_name
+							column_dict['related_table'] = table_column.related_table
+							
+							related_user_table = UserTable.objects.get(pk=table_column.related_table)
+							related_table_columns = UserTableColumn.objects.filter(table=related_user_table)
+							
+							# fred = find(lambda person: person.name == 'Fred', peeps)
+							
+							for related_column in related_table_columns:
+								if related_column.column_name == child_column:
+									column_dict['related_column'] = related_column.physical_column_name
+				
+				else:
+					physical_column_name = ""
+					for table_column in table_columns:
+						if table_column.column_name == parent_column:
+							column_dict['physical_column_name'] = table_column.physical_column_name
+
+				column_mapping.append(column_dict)
+				
+			print column_mapping
+			
+		else:
+			
+			model_obj = target_model()
+			
+			for index, column_data in enumerate(row):
+				column_info = column_mapping[index]
+				
+				if column_info.get('related_table'):
+					if column_info['related_table'] in REGISTERED_BUILT_IN_TABLES:
+						related_model = REGISTERED_BUILT_IN_TABLES[column_info['related_table']]
+						
+					else:
+						related_user_table = UserTable.objects.get(pk=column_info['related_table'])
+						related_table_columns = UserTableColumn.objects.filter(table=related_user_table)
+						related_model = opengis._create_model(related_user_table, related_table_columns)
+					
+					kwargs = {str(column_info['related_column']):column_data}
+					
+					related_model_object = related_model.objects.get(**kwargs)
+					
+					setattr(model_obj, column_info['physical_column_name'], related_model_object)
+					
+				else:
+					setattr(model_obj, column_info['physical_column_name'], column_data)
+			
+			model_obj.save()
+	
+	destination.close()
+	
+	import os
+	os.remove(temp_csv_file)
+
 #######################################################################################
 # USER QUERY
 #######################################################################################
@@ -483,7 +577,13 @@ def api_query_execute(request):
 
 		elif result_format == "geojson":
 			result_json = utilities.convert_query_result_to_geojson(request, query_result['columns'], query_result['values'])
-
+		
+		elif result_format == "update":
+			result_json = ""
+			for result in query_result['values']:
+				print result
+				result_json = result_json + 'UPDATE opengis_thailandprovince SET in_region_id = %s WHERE id = %s;' % (result[1].id,result[0])
+				
 		else:
 			columns_json = ""
 			for column in query_result['columns']:
