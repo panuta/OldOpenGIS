@@ -34,11 +34,13 @@ function submit() {
 	// Filters
 	var filter_columns = new Array();
 	$(".table_panel .manage_filters_popup li.filter").each(function() {
-		var function_name = $(this).find(".function option:selected").val();
+		var function_name = $(this).attr("rel");
+		
+		console.log(function_name);
 		
 		if(function_name == "equal") {
-			var column_id = $(this).find(".criteria select option:selected").val();
-			var criteria_value = $(this).find(".criteria input[name='value']").val();
+			var column_id = $(this).find(".column option:selected").val();
+			var criteria_value = $(this).find("input[name='value']").val();
 			
 			if($(this).find(".parameter-checkbox").attr("checked")) {
 				filter_columns.push('{"function":"' + function_name + '","column_id":"' + column_id + '"}');
@@ -47,6 +49,8 @@ function submit() {
 			}
 		}
 	});
+	
+	console.log(filter_columns);
 	
 	$(".button_panel .loading").show();
 	

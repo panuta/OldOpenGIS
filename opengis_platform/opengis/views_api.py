@@ -388,16 +388,21 @@ def api_query_create(request):
 		display_columns = list()
 		for display_column in request.POST.getlist('display'):
 			(column_hierarchy, separator, column_id) = display_column.rpartition('.')
+			column_hierarchy = _convert_hierarchy_id_to_name(column_hierarchy)
 			display_columns.append({'hierarchy':column_hierarchy,'id':column_id})
 		
 		# Prepare filter columns
 		filter_columns = list()
 		for filter_column in request.POST.getlist('filter'):
-			filter_columns.append(simplejson.loads(filter_column))
+			filter_json = simplejson.loads(filter_column)
+			filter_json['column_hierarchy'] = _convert_hierarchy_id_to_name(filter_json.get('column_hierarchy'))
+			filter_columns.append(filter_json)
 		
 		# Aggregate columns + group by
+		# TODO
 		
 		# Order by
+		# TODO
 		
 		user_query = UserQuery.objects.create(account=account,query_name=query_name,description=query_description,starter_table=starter_table)
 		
@@ -425,6 +430,22 @@ def api_query_create(request):
 
 def api_query_edit(request):
 	pass
+
+def _convert_hierarchy_id_to_name(hierarchy):
+	named_hierarchy = ""
+	for id in hierarchy.split(".") if hierarchy else list():
+		try:
+			id = int(id)
+		except ValueError:
+			if named_hierarchy: named_hierarchy = named_hierarchy + '.'
+			named_hierarchy = named_hierarchy + id
+
+		else:
+			column = UserTableColumn.objects.get(pk=id)
+			if named_hierarchy: named_hierarchy = named_hierarchy + '.'
+			named_hierarchy = named_hierarchy + column.physical_column_name
+
+	return named_hierarchy
 
 def api_query_delete(request):
 	if request.method == 'POST':

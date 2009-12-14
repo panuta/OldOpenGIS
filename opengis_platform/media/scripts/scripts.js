@@ -359,7 +359,7 @@ function initialize_ManageQueryFilters_Popup(popup_panel) {
 				
 			}
 			
-			var filter_row = $('<li class="filter"><table><tr>' + filter_html + '</tr></table><div class="remove_panel"><a href="#" class="remove-filter">Remove</a></div></li>');
+			var filter_row = $('<li class="filter" rel="' + function_name + '"><table><tr>' + filter_html + '</tr></table><div class="remove_panel"><a href="#" class="remove-filter">Remove</a></div></li>');
 			
 			$(this).closest(".manage_filters_popup").find("ul.filters").append(filter_row);
 			
