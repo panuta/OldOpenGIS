@@ -286,7 +286,10 @@ function load_CreateQueryPage_StarterTable(table_code) {
 			});
 			
 			$("#starter_panel a.manage-filters").click(function() {
-				show_ManageQueryFilters_Popup($(this));
+				var filterLinkObject = $(this);
+				show_ManageQueryFilters_Popup($(this), function(filter_count) {
+					filterLinkObject.html('<img src="' + MEDIA_URL + '/images/query_filter.png"/>Filters (' + filter_count + ')');
+				});
 				return false;
 			});
 		}
@@ -329,18 +332,19 @@ function onSubmit_ModifyQuery_SelectOtherUserTable(selectObject, submit_type, ta
 	load_CreateQueryPage_StarterTable(table_id);
 }
 
-function show_ManageQueryFilters_Popup(linkObject) {
+function show_ManageQueryFilters_Popup(linkObject, onok) {
 	var popup_panel = linkObject.closest("div.table_panel").find(".manage_filters_popup");
-	if(!popup_panel.hasClass("initialized")) initialize_ManageQueryFilters_Popup(popup_panel);
+	if(!popup_panel.hasClass("initialized")) initialize_ManageQueryFilters_Popup(popup_panel, onok);
 	popup_panel.show().css({'left':(document.documentElement.clientWidth - popup_panel.width())/2,'top':300});
 }
 
-function initialize_ManageQueryFilters_Popup(popup_panel) {
+function initialize_ManageQueryFilters_Popup(popup_panel, onok) {
 	popup_panel.html('<h4>Filters</h4><div class="select_function_panel"><label><img src="' + MEDIA_URL + '/images/icon_create.png" />Add filter: <select><option></option><option value="equal">Equal</option></select></label></div><ul class="filters"></ul><div class="popup_button_panel"><button>Save and Close</button></div>');
 	
 	// Close popup
 	popup_panel.find(".popup_button_panel button").click(function() {
 		popup_panel.hide();
+		onok(popup_panel.find("li.filter").size());
 		return false;
 	});
 	
