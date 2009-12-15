@@ -7,7 +7,7 @@ from django.db import connection, transaction
 from django.utils import simplejson
 
 import opengis
-from opengis import api, constants, sql, query, utilities
+from opengis import api, sql, query, utilities
 from opengis.models import *
 from opengis.forms import *
 from opengis.shortcuts import *

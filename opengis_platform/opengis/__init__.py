@@ -2,8 +2,6 @@ class OpenGISNotLoginError(Exception):
 	pass
 
 
-from opengis import constants
-
 # Callback after user registered
 from registration.signals import user_activated
 from opengis.views import registered_user_callback

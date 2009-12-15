@@ -13,7 +13,7 @@ from django.utils import simplejson
 from django.utils.translation import ugettext as _
 
 import opengis
-from opengis import constants, sql, query, utilities
+from opengis import sql, query, utilities
 from opengis.models import *
 from opengis.forms import *
 from opengis.shortcuts import *
