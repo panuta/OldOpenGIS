@@ -3,10 +3,10 @@ from django.db.models import *
 from opengis import sql
 from opengis.query.filters import *
 
-def sql_filter(filter, data_objects, column_manager):
+def sql_filter(filter, column_info, data_objects):
 	
 	if filter.filter_function == "equal":
-		return EqualFilter().sql_filter(filter, data_objects, column_manager)
+		return EqualFilter().sql_filter(filter, column_info, data_objects)
 	
 	elif filter.filter_function == "notequal":
 		pass

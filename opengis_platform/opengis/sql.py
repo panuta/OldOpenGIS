@@ -27,8 +27,8 @@ AGGREGATE_FUNC_VARIANCE = 7
 
 AGGREGATE_FUNC_SUFFIX = ['','avg','count','max']
 
-def sql_create_table(user_table, user_table_columns):
-	model_class = opengis._create_model(user_table, user_table_columns)
+def sql_create_table(user_table):
+	model_class = opengis.create_model(user_table)
 	
 	style = no_style()
 	

@@ -14,6 +14,7 @@ urlpatterns = patterns('opengis.views_api',
 	url(r'^table/delete/$', 'api_table_delete', name="opengis_api_table_delete"),
 	url(r'^table/data/$', 'api_table_data', name="opengis_api_table_data"), # Get data list
 	url(r'^table/import/$', 'api_table_import', name="opengis_api_table_import"),
+	url(r'^table/builtin/list/$', 'api_table_builtin_list', name="opengis_api_builtin_list"),
 
 	# User Query
 	url(r'^query/create/$', 'api_query_create', name="opengis_api_query_create"),

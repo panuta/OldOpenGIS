@@ -40,12 +40,12 @@ function submit() {
 			}
 		
 		} else if(data_type == "builtin") {
-			var builtin_table_code = $(this).find("select.related option:selected").val();
+			var builtin_table_id = $(this).find("select.related option:selected").val();
 			
-			if(builtin_table_code == undefined || builtin_table_code == "") {
+			if(builtin_table_id == undefined || builtin_table_id == "") {
 				// ERROR
 			} else {
-				columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + builtin_table_code + '"}');
+				columns.push('{"name":"' + column_name + '","type":"' + data_type + '","related":"' + builtin_table_id + '"}');
 				return;
 			}
 

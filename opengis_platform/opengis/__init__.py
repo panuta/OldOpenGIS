@@ -1,3 +1,7 @@
+class OpenGISNotLoginError(Exception):
+	pass
+
+
 from opengis import constants
 
 # Callback after user registered
@@ -7,6 +11,7 @@ from opengis.views import registered_user_callback
 user_activated.connect(registered_user_callback)
 
 # Create django model class from variable
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from opengis.models import *
@@ -14,54 +19,59 @@ from opengis import sql
 
 from django.utils.encoding import *
 
-def _create_model(user_table, user_table_columns):
+def create_model(user_table):
 	class Meta:
 		pass
 
-	# setattr(Meta, 'app_label', APPLICATION_NAME)
+	attrs = {'__module__': settings.MAIN_APPLICATION_NAME + ".models", 'Meta': Meta}
 	
-	attrs = {'__module__': constants.APPLICATION_NAME + ".models", 'Meta': Meta}
-	
+	user_table_columns = UserTableColumn.objects.filter(table=user_table)
+
 	for column in user_table_columns:
-		
 		column.physical_column_name = smart_str(column.physical_column_name)
-		
+
 		if column.data_type == sql.TYPE_CHARACTER:
 			attrs[column.physical_column_name] = models.CharField(max_length=sql.DEFAULT_CHARACTER_LENGTH, null=True)
-			
+
 		elif column.data_type == sql.TYPE_NUMBER:
 			attrs[column.physical_column_name] = models.FloatField(null=True)
-			
+
 		elif column.data_type == sql.TYPE_DATETIME:
 			attrs[column.physical_column_name] = models.DateTimeField(null=True)
-		
+
 		elif column.data_type == sql.TYPE_DATE:
 			attrs[column.physical_column_name] = models.DateField(null=True)
-		
+
 		elif column.data_type == sql.TYPE_TIME:
 			attrs[column.physical_column_name] = models.TimeField(null=True)
-		
+
 		elif column.data_type == sql.TYPE_REGION:
 			attrs[column.physical_column_name] = models.MultiPolygonField(null=True)
-		
+
 		elif column.data_type == sql.TYPE_LOCATION:
 			attrs[column.physical_column_name] = models.PointField(null=True)
-		
+
 		elif column.data_type == sql.TYPE_USER_TABLE:
-			my_table = UserTable.objects.get(pk=column.related_table)
-			my_table_columns = UserTableColumn.objects.filter(table=user_table)
-			
-			attrs[column.physical_column_name] = models.ForeignKey(_create_model(my_table, my_table_columns), null=True)
-		
-		elif column.data_type == sql.TYPE_BUILT_IN_TABLE:
-			attrs[column.physical_column_name] = models.ForeignKey(REGISTERED_BUILT_IN_TABLES[column.related_table], null=True)
-	
+			foreign_table = UserTable.objects.get(pk=column.related_table)
+			attrs[column.physical_column_name] = models.ForeignKey(create_model(foreign_table), null=True)
+
 	attrs['objects'] = models.GeoManager()
-	
+
 	model_class = type(str(user_table.table_class_name), (models.Model,), attrs) # user_table.table_class_name return as 'unicode', convert to string
 
 	return model_class
 
+
+
+	
+
+
+
+
+
+
+
+"""
 class TableColumnManager(object): # New manager
 
 	def __init__(self, starter_table):
@@ -214,3 +224,4 @@ class TableColumnManager(object): # New manager
 					'physical_name':column_mapping[column_name].physical_column_name,
 					'related_table':column_mapping[column_name].related_table,
 				}
+"""

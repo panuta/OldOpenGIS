@@ -7,6 +7,11 @@ def _two_digit(value):
 	if value < 10: return "0" + str(value)
 	return str(value)
 
+def list_find(f, seq):
+	for item in seq:
+		if f(item): 
+			return item
+
 # Dump a list of list to JSON
 def json_dumps(result_list):
 	json = ""

@@ -67,6 +67,10 @@ TEMPLATE_DIRS = (
 
 ACCOUNT_ACTIVATION_DAYS = 7
 
+SYSTEM_USERNAME = 'system'
+SYSTEM_EMAIL_ADDRESS = 'application.testbed@gmail.com'
+SYSTEM_PASSWORD = 'panuta'
+
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'application.testbed@gmail.com'
@@ -91,4 +95,7 @@ POSTGIS_TEMPLATE = 'template_for_postgis'
 # OpenGIS
 OPENGIS_TEMPLATE_PREFIX = "./opengis/"
 TEMP_CSV_PATH = os.path.join(_base, "files/csv")
+
+MAIN_APPLICATION_NAME = "opengis"
+USER_TABLE_PREFIX = "ut"
 

@@ -7,7 +7,7 @@ from django.db import connection, transaction
 from django.utils import simplejson
 
 import opengis
-from opengis import api, constants, sql, errors, query, utilities
+from opengis import api, constants, sql, query, utilities
 from opengis.models import *
 from opengis.forms import *
 from opengis.shortcuts import *
@@ -72,7 +72,7 @@ def api_table_create(request):
 			
 			# Create table metadata
 			user_table = UserTable.objects.create(account=account, table_name=table_name, description=description, share_level=share_level, display_column=display_column)
-			user_table.table_class_name = constants.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
+			user_table.table_class_name = settings.USER_TABLE_PREFIX + "_" + str(user_table.account.user.id) + "_" + str(user_table.id)
 			user_table.save()
 
 			user_table_columns = list()
@@ -90,7 +90,7 @@ def api_table_create(request):
 					UserTableTag.objects.create(table=user_table,tag_name=tag)
 			
 			# Create table at database server
-			sql.sql_create_table(user_table, user_table_columns)
+			sql.sql_create_table(user_table)
 			
 			return api.APIResponse(api.API_RESPONSE_SUCCESS, result={'id':user_table.id})
 		
@@ -241,7 +241,7 @@ def api_table_delete_columns(request):
 			
 			cursor = connection.cursor()
 			
-			database_table_name = constants.APPLICATION_NAME + "_" + user_table.table_class_name
+			database_table_name = settings.MAIN_APPLICATION_NAME + "_" + user_table.table_class_name
 			
 			if user_table_column.data_type in (sql.TYPE_REGION, sql.TYPE_LOCATION):
 				cursor.execute("SELECT DropGeometryColumn ('%s','%s')" % (database_table_name,user_table_column.physical_column_name))
@@ -262,7 +262,7 @@ def api_table_empty(request):
 		user_table = UserTable.objects.get(pk=request.POST.get('table_id'))
 		user_table_columns = UserTableColumn.objects.filter(table=user_table)
 		
-		table_model = opengis._create_model(user_table, user_table_columns)
+		table_model = opengis.create_model(user_table)
 		table_model.objects.all().delete()
 		
 		return api.APIResponse(api.API_RESPONSE_SUCCESS)
@@ -279,7 +279,7 @@ def api_table_delete(request):
 		cursor = connection.cursor()
 		
 		# Drop user table
-		database_table_name = constants.APPLICATION_NAME + "_" + user_table.table_class_name
+		database_table_name = settings.MAIN_APPLICATION_NAME + "_" + user_table.table_class_name
 		cursor.execute("SELECT DropGeometryTable ('%s')" % database_table_name)
 		transaction.set_dirty()
 		
@@ -300,6 +300,13 @@ def _decode_table_column(raw_column, current_account):
 	
 	type_string = column['type']
 	
+	if type_string == "table":
+		related_table = UserTable.objects.get(pk=column['related'])
+
+		if related_table.account != current_account and related_table.share_level != 9:
+			pass
+			# RAISE NO ACCESS to private table
+	
 	if type_string == "char": column_type = sql.TYPE_CHARACTER
 	elif type_string == "number": column_type = sql.TYPE_NUMBER
 	elif type_string == "datetime": column_type = sql.TYPE_DATETIME
@@ -308,16 +315,9 @@ def _decode_table_column(raw_column, current_account):
 	elif type_string == "region": column_type = sql.TYPE_REGION
 	elif type_string == "location": column_type = sql.TYPE_LOCATION
 	elif type_string == "table": column_type = sql.TYPE_USER_TABLE
-	elif type_string == "builtin": column_type = sql.TYPE_BUILT_IN_TABLE
+	elif type_string == "builtin": column_type = sql.TYPE_USER_TABLE
 	else: column_type = 0
 
-	if type_string == "table":
-		related_table = UserTable.objects.get(pk=column['related'])
-
-		if related_table.account != current_account and related_table.share_level != 9:
-			pass
-			# RAISE NO ACCESS to private table
-	
 	if column_type != 0:
 		column['type'] = column_type
 	
@@ -325,26 +325,13 @@ def _decode_table_column(raw_column, current_account):
 
 def api_table_info(request):
 	if request.method == 'GET':
-		table_codes = request.GET.getlist('table_code')
+		table_ids = request.GET.getlist('table_id')
 		result = list()
 		
-		for table_code in table_codes:
-			if table_code in REGISTERED_BUILT_IN_TABLES:
-				table_columns = REGISTERED_BUILT_IN_TABLES[table_code].Info.columns
-
-				table_id = REGISTERED_BUILT_IN_TABLES[table_code].Info.code
-				name = REGISTERED_BUILT_IN_TABLES[table_code].Info.name
-				columns = [{'id':table_columns[column_code]['physical_name'],'name':table_columns[column_code]['name'],'physical_name':table_columns[column_code]['physical_name']} for column_code in table_columns.keys()]
-
-			elif table_code:
-				user_table = UserTable.objects.get(pk=table_code)
-				table_columns = UserTableColumn.objects.filter(table=user_table)
-
-				table_id = user_table.id
-				name = user_table.table_name
-				columns = [{'id':column.id,'name':column.column_name,'physical_name':column.physical_column_name} for column in table_columns]
-
-			result.append({'id':table_id, 'name':name,'code':table_code,'columns':columns})
+		for table_id in table_ids:
+			user_table = UserTable.objects.get(pk=table_id)
+			columns = [{'id':column.id,'name':column.column_name} for column in UserTableColumn.objects.filter(table=user_table)]
+			result.append({'id':user_table.id, 'name':user_table.table_name,'columns':columns})
 		
 		if result:
 			return api.APIResponse(api.API_RESPONSE_SUCCESS, result=result)
@@ -378,7 +365,6 @@ def api_table_list(request):
 def api_table_import(request):
 	if request.method == 'POST':
 		import_table(request)
-		
 		return api.APIResponse(api.API_RESPONSE_SUCCESS, result=result)
 	
 	else:
@@ -396,7 +382,7 @@ def import_table(user_table, account, request):
 	
 	table_columns = UserTableColumn.objects.filter(table=user_table)
 	
-	target_model = opengis._create_model(user_table, table_columns)
+	target_model = opengis.create_model(user_table)
 	target_model.objects.all().delete()
 	
 	column_mapping = list()
@@ -407,53 +393,36 @@ def import_table(user_table, account, request):
 			# Map logical column name used in CSV to physical database column name
 			for index, column_name in enumerate(row):
 				(parent_column, separator, child_column) = column_name.partition("---")
-				column_dict = dict()
+				column_info = dict()
+				
+				table_column = utilities.list_find(lambda table_column: table_column.column_name == parent_column, table_columns)
 				
 				if child_column:
-					for table_column in table_columns:
-						if table_column.column_name == parent_column:
-							column_dict['physical_column_name'] = table_column.physical_column_name
-							column_dict['related_table'] = table_column.related_table
-							
-							related_user_table = UserTable.objects.get(pk=table_column.related_table)
-							related_table_columns = UserTableColumn.objects.filter(table=related_user_table)
-							
-							# fred = find(lambda person: person.name == 'Fred', peeps)
-							
-							for related_column in related_table_columns:
-								if related_column.column_name == child_column:
-									column_dict['related_column'] = related_column.physical_column_name
-				
+					column_info['physical_column_name'] = table_column.physical_column_name
+					column_info['related_table'] = table_column.related_table
+					
+					related_user_table = UserTable.objects.get(pk=table_column.related_table)
+					related_table_columns = UserTableColumn.objects.filter(table=related_user_table)
+					
+					related_column = utilities.list_find(lambda related_column: related_column.column_name == child_column, related_table_columns)
+					column_info['related_column'] = related_column.physical_column_name
+					
 				else:
-					physical_column_name = ""
-					for table_column in table_columns:
-						if table_column.column_name == parent_column:
-							column_dict['physical_column_name'] = table_column.physical_column_name
-
-				column_mapping.append(column_dict)
+					column_info['physical_column_name'] = table_column.physical_column_name
 				
-			print column_mapping
-			
+				column_mapping.append(column_info)
+				
 		else:
-			
 			model_obj = target_model()
 			
 			for index, column_data in enumerate(row):
 				column_info = column_mapping[index]
 				
 				if column_info.get('related_table'):
-					if column_info['related_table'] in REGISTERED_BUILT_IN_TABLES:
-						related_model = REGISTERED_BUILT_IN_TABLES[column_info['related_table']]
-						
-					else:
-						related_user_table = UserTable.objects.get(pk=column_info['related_table'])
-						related_table_columns = UserTableColumn.objects.filter(table=related_user_table)
-						related_model = opengis._create_model(related_user_table, related_table_columns)
+					related_user_table = UserTable.objects.get(pk=column_info['related_table'])
+					related_model = opengis.create_model(related_user_table)
 					
-					kwargs = {str(column_info['related_column']):column_data}
-					
-					related_model_object = related_model.objects.get(**kwargs)
-					
+					related_model_object = related_model.objects.get(**{str(column_info['related_column']):column_data})
 					setattr(model_obj, column_info['physical_column_name'], related_model_object)
 					
 				else:
@@ -465,6 +434,17 @@ def import_table(user_table, account, request):
 	
 	import os
 	os.remove(temp_csv_file)
+
+def api_table_builtin_list(request):
+	if request.method == 'GET':
+		user_tables = UserTable.objects.filter(is_builtin=True).order_by('table_name')
+		
+		result = [{'id':user_table.id,'name':user_table.table_name} for user_table in user_tables]
+		
+		return api.APIResponse(api.API_RESPONSE_SUCCESS, result=result)
+	
+	else:
+		return api.APIResponse(api.API_RESPONSE_GETONLY)
 
 #######################################################################################
 # USER QUERY
@@ -498,11 +478,11 @@ def api_query_create(request):
 		# Order by
 		# TODO
 		
-		user_query = UserQuery.objects.create(account=account,query_name=query_name,description=query_description,starter_table=starter_table)
+		user_query = UserQuery.objects.create(account=account,query_name=query_name,description=query_description,starter_table=UserTable(id=starter_table))
 		
 		# Store display columns
 		for column in display_columns:
-			UserQueryDisplayColumn.objects.create(query=user_query,column_hierarchy=column['hierarchy'],column_id=column['id'])
+			UserQueryDisplayColumn.objects.create(query=user_query,column_hierarchy=column['hierarchy'],column=UserTableColumn(id=column['id']))
 		
 		# Store filter columns
 		for column in filter_columns:
@@ -511,7 +491,7 @@ def api_query_create(request):
 			UserQueryFilter.objects.create(
 				query=user_query,
 				column_hierarchy=column['column_hierarchy'],
-				column_id=column['column_id'],
+				column=UserTableColumn(id=column['column_id']),
 				filter_function=column['function'],
 				filter_value=column.get('value'),
 				is_variable=is_variable,
@@ -528,16 +508,9 @@ def api_query_edit(request):
 def _convert_hierarchy_id_to_name(hierarchy):
 	named_hierarchy = ""
 	for id in hierarchy.split(".") if hierarchy else list():
-		try:
-			id = int(id)
-		except ValueError:
-			if named_hierarchy: named_hierarchy = named_hierarchy + '.'
-			named_hierarchy = named_hierarchy + id
-
-		else:
-			column = UserTableColumn.objects.get(pk=id)
-			if named_hierarchy: named_hierarchy = named_hierarchy + '.'
-			named_hierarchy = named_hierarchy + column.physical_column_name
+		column = UserTableColumn.objects.get(pk=id)
+		if named_hierarchy: named_hierarchy = named_hierarchy + '.'
+		named_hierarchy = named_hierarchy + column.physical_column_name
 
 	return named_hierarchy
 
@@ -598,7 +571,7 @@ def api_query_execute(request):
 		return api.APIResponse(api.API_RESPONSE_GETONLY)
 
 def execute_query(user_query, parameters, result_limit=None):
-	column_manager = opengis.TableColumnManager(user_query.starter_table)
+	# column_manager = opengis.TableColumnManager(user_query.starter_table)
 	
 	display_columns = UserQueryDisplayColumn.objects.filter(query=user_query)
 
@@ -607,9 +580,9 @@ def execute_query(user_query, parameters, result_limit=None):
 	
 	for display_column in display_columns:
 		if display_column.is_aggregate:
-			column_info = {'id':display_column.column_id,'name':display_column.column_id,'type':sql.TYPE_NUMBER,'physical_name':display_column.column_id,'related_table':''}
+			column_info = {'id':display_column.column_id.id,'name':display_column.column_id.id,'type':sql.TYPE_NUMBER,'physical_name':display_column.column_id.id,'related_table':''}
 		else:
-			column_info = column_manager.get_column_info(display_column.column_hierarchy, display_column.column_id)
+			column_info = _to_column_dict(display_column.column)
 		
 		if display_column.display_name: column_info['name'] = display_column.display_name
 		column_info['column_hierarchy'] = display_column.column_hierarchy
@@ -617,15 +590,7 @@ def execute_query(user_query, parameters, result_limit=None):
 		result_columns.append(column_info)
 	
 	# Create Starter Model
-	if user_query.starter_table in REGISTERED_BUILT_IN_TABLES:
-		starter_model = REGISTERED_BUILT_IN_TABLES[user_query.starter_table]
-	
-	else:
-		user_table = UserTable.objects.get(pk=user_query.starter_table)
-		table_columns = UserTableColumn.objects.filter(table=user_table)
-
-		starter_model = opengis._create_model(user_table, table_columns)
-	
+	starter_model = opengis.create_model(user_query.starter_table)
 	data_objects = starter_model.objects.all()
 
 	# Virtual Columns -- WILL DO
@@ -633,20 +598,19 @@ def execute_query(user_query, parameters, result_limit=None):
 	# Entry.objects.extra(select={'is_recent': "pub_date > '2006-01-01'"})
 
 	# Group By
-	group_by_columns = UserQueryAggregateColumnGroupBy.objects.filter(query=user_query)
+	group_by_columns = UserQueryGroupByColumn.objects.filter(query=user_query)
 	for group_by in group_by_columns:
-		column_info = column_manager.get_column_info('', group_by.column_id)
-		data_objects = data_objects.values(column_info['physical_name'])
+		data_objects = data_objects.values(group_by.column.physical_column_name)
 
 	# Aggregate Columns
 	aggregate_columns = UserQueryAggregateColumn.objects.filter(query=user_query)
 	if group_by_columns: # If using 'values', we must use annotate, instead of aggregate
 		for aggregate_column in aggregate_columns:
-			column_info = column_manager.get_column_info('', aggregate_column.column_id)
+			column_info = _to_column_dict(aggregate_column.column)
 			data_objects = data_objects.annotate(query.sql_aggregate(aggregate_column, column_info))
 	else:
 		for aggregate_column in aggregate_columns:
-			column_info = column_manager.get_column_info('', aggregate_column.column_id)
+			column_info = _to_column_dict(aggregate_column.column)
 			data_objects = data_objects.aggregate(query.sql_aggregate(aggregate_column, column_info))
 
 	# Filter
@@ -655,8 +619,8 @@ def execute_query(user_query, parameters, result_limit=None):
 			filter.filter_value = parameters.get(filter.filter_value)
 			if not filter.filter_value: continue
 
-		column_info = column_manager.get_column_info(filter.column_hierarchy, filter.column_id)
-		data_objects = query.sql_filter(filter, data_objects, column_manager)
+		column_info = _to_column_dict(filter.column)
+		data_objects = query.sql_filter(filter, column_info, data_objects)
 
 	# Order by
 	order_by_columns = UserQueryOrderByColumn.objects.filter(query=user_query).order_by('order_priority') # Less has more priority
@@ -688,6 +652,8 @@ def execute_query(user_query, parameters, result_limit=None):
 	
 	# Dump result in a list of list
 	result = list()
+	
+	print data_objects
 
 	if aggregate_columns and not group_by_columns: # using aggregate without grouping by will have result as a dict
 		result_row = list()
@@ -715,7 +681,7 @@ def execute_query(user_query, parameters, result_limit=None):
 			if result_row: result.append(result_row)
 
 	else:
-		result = _extract_query_result(data_objects, result_columns, column_manager)
+		result = _extract_query_result(user_query.starter_table, data_objects, result_columns)
 
 	# Result limitation -- either define it in user query table or 'limit' parameter in request URL
 	if user_query.result_limit or result_limit:
@@ -725,8 +691,16 @@ def execute_query(user_query, parameters, result_limit=None):
 
 	return {'columns':result_columns,'values':result}
 
+def _to_column_dict(table_column):
+	return {
+		'id':table_column.id,
+		'name':table_column.column_name,
+		'type':table_column.data_type,
+		'physical_name':table_column.physical_column_name,
+		'related_table':table_column.related_table,
+	}
 
-def _extract_query_result(query_result, result_columns, column_manager):
+def _extract_query_result(starter_table, query_result, result_columns):
 	result = list()
 	
 	for datum in query_result:
@@ -744,25 +718,26 @@ def _extract_query_result(query_result, result_columns, column_manager):
 					except:
 						result_row.append("")
 					
-				else: # query_result returns as a list of dict (cause by using GROUP BY)
+				else: # query_result returns as a list of dict (cause by using group by)
 					
 					growing_hierarchy = ""
+					hierarchy_user_table = starter_table
+					hierarchy_data = None
+					
 					for index, hierarchy in enumerate(hierarchy_list):
-						related_table = column_manager.get_column_info_by_name(growing_hierarchy, hierarchy)['related_table']
 						
-						if growing_hierarchy: growing_hierarchy = growing_hierarchy + "."
-						growing_hierarchy = growing_hierarchy + hierarchy
+						try:
+							value = hierarchy_data.id
+						except:
+							value = datum[hierarchy]
 						
-						if related_table in REGISTERED_BUILT_IN_TABLES:
-							hierarchy_model_object = REGISTERED_BUILT_IN_TABLES[related_table]
-							
-						else:
-							hierarchy_user_table = UserTable.objects.get(pk=related_table)
-							hierarchy_table_columns = UserTableColumn.objects.filter(table=hierarchy_user_table)
-							
-							hierarchy_model_object = opengis._create_model(hierarchy_user_table, hierarchy_table_columns)
+						table_column = utilities.list_find(lambda table_column: table_column.physical_column_name==hierarchy, UserTableColumn.objects.filter(table=hierarchy_user_table))
+						related_table = table_column.related_table
 						
-						hierarchy_data = hierarchy_model_object.objects.get(pk=datum[hierarchy])
+						hierarchy_user_table = UserTable.objects.get(pk=related_table)
+						hierarchy_model_object = opengis.create_model(hierarchy_user_table)
+						
+						hierarchy_data = hierarchy_model_object.objects.get(pk=value)
 
 					result_row.append(getattr(hierarchy_data, result_column['physical_name']))
 					
@@ -779,6 +754,7 @@ def _extract_query_result(query_result, result_columns, column_manager):
 
 	return result
 
+
 def api_testbed(request):
 	delete_column_id = request.GET.get("id")
 	
@@ -790,7 +766,7 @@ def api_testbed(request):
 	
 	cursor = connection.cursor()
 	
-	database_table_name = constants.APPLICATION_NAME + "_" + user_table.table_class_name
+	database_table_name = settings.MAIN_APPLICATION_NAME + "_" + user_table.table_class_name
 	
 	if user_table_column.data_type in (sql.TYPE_REGION, sql.TYPE_LOCATION):
 		cursor.execute("SELECT DropGeometryColumn ('%s','%s')" % (database_table_name,user_table_column.physical_column_name))

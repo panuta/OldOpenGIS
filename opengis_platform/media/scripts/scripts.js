@@ -159,7 +159,15 @@ function onChange_ModifyTable_DataType(selectObject) {
 		selectObject.parent().find(".more_inputs").html('<select class="related"><option value="datetime">Date and Time</option><option value="date">Date only</option><option value="time">Time only</option></select>');
 	
 	} else if(data_type == "builtin") {
-		selectObject.parent().find(".more_inputs").html('<select class="related"><option></option><option value="thailand_province">Thailand Province</option><option value="thailand_region">Thailand Region</option></select>');
+		selectObject.parent().find(".more_inputs").html('<img src="' + MEDIA_URL + '/images/loading.gif" />');
+		
+		$.getJSON("/api/table/builtin/list/", function(data) {
+			var option_html = "";
+			for(var i=0; i<data.result.length; i++) {
+				option_html += '<option value="' + data.result[i].id + '">' + data.result[i].name + '</option>';
+			}
+			selectObject.parent().find(".more_inputs").html('<select class="related"><option></option>' + option_html + '</select>');
+		});
 	
 	} else if(data_type == "table") {
 		selectObject.parent().find(".more_inputs").html('<select class="related"><option></option><option value="mine">My Tables</option><option value="others">User\'s Table</option></select>');
@@ -235,13 +243,12 @@ function initialize_CreateQueryPage() {
 		
 		if(table_type == "mine") {
 			$.getJSON("/api/table/list/", function(data) {
-				var list_html = '';
+				var option_html = '';
 				for(var i in data.result) {
-					list_html += '<option value="' + data.result[i].id + '">' + data.result[i].name + '</option>';
+					option_html += '<option value="' + data.result[i].id + '">' + data.result[i].name + '</option>';
 				}
 				
-				selectObject.parent().find(".related_table").remove();
-				selectObject.parent().append('<select class="related_table"><option></option>' + list_html + '</select>');
+				selectObject.parent().find(".more_inputs").html('<select class="related_table"><option></option>' + option_html + '</select>');
 				
 				selectObject.parent().find("select.related_table").change(function() {
 					load_CreateQueryPage_StarterTable($(this).find("option:selected").val());
@@ -262,10 +269,19 @@ function initialize_CreateQueryPage() {
 			});
 			
 		} else if(table_type == "builtin") {
-			$(this).parent().append('<select class="table_selector"><option></option>{% generate_built_in_table_list %}</select>');
-			
-			$(this).parent().find("select.table_selector").change(function() {
-				load_CreateQueryPage_StarterTable($(this).find("option:selected").val());
+			selectObject.parent().find(".more_inputs").html('<img src="' + MEDIA_URL + '/images/loading.gif" />');
+
+			$.getJSON("/api/table/builtin/list/", function(data) {
+				var option_html = "";
+				for(var i=0; i<data.result.length; i++) {
+					option_html += '<option value="' + data.result[i].id + '">' + data.result[i].name + '</option>';
+				}
+				
+				selectObject.parent().find(".more_inputs").html('<select class="related_table"><option></option>' + option_html + '</select>');
+				
+				selectObject.parent().find("select.related_table").change(function() {
+					load_CreateQueryPage_StarterTable($(this).find("option:selected").val());
+				});
 			});
 		}
 	});
@@ -276,8 +292,8 @@ function initialize_CreateQueryPage() {
 	});
 }
 
-function load_CreateQueryPage_StarterTable(table_code) {
-	$.getJSON("/api/table/?table_code=" + table_code, function(data) {
+function load_CreateQueryPage_StarterTable(table_id) {
+	$.getJSON("/api/table/?table_id=" + table_id, function(data) {
 		if(data.response == "success") {
 			$("#starter_panel").html(draw_CreateQueryPage_TableHTML(data.result[0]) + '<div class="manage_filters_popup" style="display:none;"></div>');
 			
@@ -310,9 +326,8 @@ function draw_CreateQueryPage_TableHTML(table_info) {
 }
 
 function onSubmit_ModifyQuery_SelectOtherUserTable(selectObject, submit_type, table_id, table_name) {
-	selectObject.parent().find(".related_table").remove();
+	selectObject.parent().find('.more_inputs').html('<span class="related_table" rel="' + table_id + '">' + table_name + '<a href="#" class="change-user-table">Change</a></span>');
 	
-	selectObject.parent().append('<span class="related_table" rel="' + table_id + '">' + table_name + '<a href="#" class="change-user-table">Change</a></span>');
 	selectObject.parent().find("a.change-user-table").click(function() {
 		var left = selectObject.offset().left;
 		var top = selectObject.offset().top+30;

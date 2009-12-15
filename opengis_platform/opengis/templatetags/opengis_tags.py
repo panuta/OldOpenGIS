@@ -47,8 +47,15 @@ def my_url(parser, token):
 		return MyURLNode(my_url_name, user_url_name, params)
 
 @register.simple_tag
-def print_value(data_row, column_name):
-	return getattr(data_row, column_name)
+def print_value(data_row, column_info):
+	
+	if column_info.data_type == sql.TYPE_USER_TABLE:
+		obj = getattr(data_row, column_info.physical_column_name)
+		display_column = UserTable.objects.get(pk=column_info.related_table).display_column
+		return getattr(obj, display_column)
+		
+	else:
+		return getattr(data_row, column_info.physical_column_name)
 
 @register.simple_tag
 def print_share_level_html(MEDIA_URL, level_number):
@@ -106,13 +113,5 @@ def generate_user_table_list(user_tables):
 	return html
 
 
-@register.simple_tag
-def generate_built_in_table_list():
-	html = ""
-	for table_key in REGISTERED_BUILT_IN_TABLES.keys():
-		table_model = REGISTERED_BUILT_IN_TABLES[table_key]
-		html += '<option value="' + table_model.Info.code + '">' + table_model.Info.name + '</option>'
-	
-	return html
 	
 		

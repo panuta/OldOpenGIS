@@ -68,7 +68,7 @@ $(document).ready(function() {
 						<td><a href="#">Edit</a></td>
 						<td>{{data_row.id}}</td>
 						{% for column in user_table.columns %}
-						<td>{% print_value data_row column.physical_column_name %}</td>
+						<td>{% print_value data_row column %}</td>
 						{% endfor %}
 					</tr>
 				{% endfor %}

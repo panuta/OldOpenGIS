@@ -13,7 +13,7 @@ from django.utils import simplejson
 from django.utils.translation import ugettext as _
 
 import opengis
-from opengis import constants, sql, errors, query, utilities
+from opengis import constants, sql, query, utilities
 from opengis.models import *
 from opengis.forms import *
 from opengis.shortcuts import *
@@ -72,7 +72,7 @@ def view_user_home(request, username):
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "user_home.html", {'account':account, 'user_tables':user_tables, 'user_queries':user_queries}, context_instance=RequestContext(request))
 
 ##############################
-# DYNAMIC TABLE
+# USER TABLE
 ##############################
 def list_user_table(request, username):
 	(user, account, is_owner) = get_user_auth(request, username)
@@ -91,7 +91,7 @@ def view_user_table(request, username, table_name):
 	user_table.columns = UserTableColumn.objects.filter(table=user_table).order_by('created')
 	user_table.tags = UserTableTag.objects.filter(table=user_table)
 	
-	table_model = opengis._create_model(user_table, user_table.columns)
+	table_model = opengis.create_model(user_table)
 	table_data = table_model.objects.all()
 
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_view.html", {'account':account, 'user_table':user_table, 'table_data':table_data}, context_instance=RequestContext(request))
@@ -130,65 +130,6 @@ def import_user_table(request, table_name):
 		form = ImportDataToTableForm(auto_id=False)
 
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
-
-"""
-@login_required
-def import_user_table(request, table_name):
-	account = Account.objects.get(user=request.user)
-	
-	user_table = get_object_or_404(UserTable, account=account, table_name=table_name)
-	
-	if request.method == "POST":
-		form = ImportDataToTableForm(request.POST, request.FILES)
-		if form.is_valid():
-			temp_csv_file = settings.TEMP_CSV_PATH + '/temp_' + str(account.user.id) + "_" + str(long(round(time.time()))) + '.csv'
-			
-			destination = open(temp_csv_file, 'wb')
-			for chunk in request.FILES['file'].chunks(): destination.write(chunk)
-			destination.close()
-			
-			destination = open(temp_csv_file, 'rb')
-			csv_reader = csv.reader(destination)
-			
-			user_table = UserTable.objects.get(account=account, table_name=table_name)
-			table_columns = UserTableColumn.objects.filter(table=user_table)
-			
-			target_model = opengis._create_model(user_table, table_columns)
-			target_model.objects.all().delete()
-			
-			column_mapping = list()
-			
-			for row in csv_reader:
-				if not column_mapping:
-					# Map logical column name used in CSV to physical database column name
-					for index, column_name in enumerate(row):
-						to_physical_name = ""
-						for table_column in table_columns:
-							if table_column.column_name == column_name: to_physical_name = table_column.physical_column_name
-						
-						column_mapping.append(to_physical_name)
-					
-				else:
-					model_obj = target_model()
-					
-					for index, column_data in enumerate(row):
-						if column_mapping[index]:
-							setattr(model_obj, column_mapping[index], column_data)
-					
-					model_obj.save()
-			
-			destination.close()
-			
-			import os
-			os.remove(temp_csv_file)
-			
-			return redirect(reverse('opengis_import_my_table', args=[table_name]))
-		
-	else:
-		form = ImportDataToTableForm(auto_id=False)
-	
-	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_import.html", {'account':account, 'user_table':user_table, 'form':form}, context_instance=RequestContext(request))
-"""
 
 def search_public_table(request):
 	return render_to_response(settings.OPENGIS_TEMPLATE_PREFIX + "table_search.html", {}, context_instance=RequestContext(request))
@@ -273,7 +214,7 @@ def get_user_table_json(request, table_name):
 	user_table = get_object_or_404(UserTable, table_name=table_name)
 	user_table.columns = UserTableColumn.objects.filter(table=user_table)
 	
-	model_class = opengis._create_model(user_table, user_table.columns)
+	model_class = opengis.create_model(user_table)
 	data = model_class.objects.all()
 	
 	result = list()

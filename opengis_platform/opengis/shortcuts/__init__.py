@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 
-from opengis import errors
+from opengis import OpenGISNotLoginError
 from opengis.models import Account
 
 def get_user_auth(request, username):
@@ -12,7 +12,7 @@ def get_user_auth(request, username):
 			user = request.user
 			account = Account.objects.get(user=request.user)
 		else:
-			raise errors.OpenGISNotLoginError
+			raise OpenGISNotLoginError
 	
 	return (user, account, username == request.user.username)
 

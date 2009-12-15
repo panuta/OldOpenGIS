@@ -36,8 +36,6 @@ function submit() {
 	$(".table_panel .manage_filters_popup li.filter").each(function() {
 		var function_name = $(this).attr("rel");
 		
-		console.log(function_name);
-		
 		if(function_name == "equal") {
 			var column_id = $(this).find(".column option:selected").val();
 			var criteria_value = $(this).find("input[name='value']").val();
@@ -49,8 +47,6 @@ function submit() {
 			}
 		}
 	});
-	
-	console.log(filter_columns);
 	
 	$(".button_panel .loading").show();
 	
@@ -79,6 +75,7 @@ function submit() {
 			<div class="starter_table">
 				<label>Select Table:</label>
 				<select class="starter_selector"><option></option><option value="mine">My Tables</option><option value="others">User's Table</option><option value="builtin">Built-in Table</option></select>
+				<span class="more_inputs"></span>
 			</div>
 			<div class="tables">
 				<div id="starter_panel" class="table_panel"></div>
