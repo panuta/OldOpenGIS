@@ -10,6 +10,7 @@ urlpatterns = patterns('opengis.views_api',
 	url(r'^table/add-columns/$', 'api_table_add_columns', name="opengis_api_table_add_columns"),
 	url(r'^table/rename-columns/$', 'api_table_rename_columns', name="opengis_api_table_rename_columns"),
 	url(r'^table/delete-columns/$', 'api_table_delete_columns', name="opengis_api_table_delete_columns"),
+	url(r'^table/save-row/$', 'api_table_save_row', name="opengis_api_table_save_row"),
 	url(r'^table/empty/$', 'api_table_empty', name="opengis_api_table_empty"),
 	url(r'^table/delete/$', 'api_table_delete', name="opengis_api_table_delete"),
 	url(r'^table/data/$', 'api_table_data', name="opengis_api_table_data"), # Get data list

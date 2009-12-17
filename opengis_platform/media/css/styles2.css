@@ -1,0 +1,111 @@
+.view_data .edit-row {
+	display: none;
+}
+
+.view_data .popup-submit {
+	width: 100%;
+	height: 25px;
+	background-color: #DDDDDD;
+	border-color: #999999 #666666 #666666 #999999;
+	border-style: solid;
+	border-width: 1px;
+	color: #333333;
+}
+
+.view_data .popup-submit:hover {
+	background-color: #CC6633;
+	color: #EEEEEE;
+}
+
+.view_data .popup-submit:active {
+	border-color: #336699;
+}
+
+.view_data tr td.first, .view_data tr td.first div.wrap {
+	width: 60px;
+	padding: 0px;
+	text-align: center;
+	font-weight: bold;
+}
+
+.view_data tr td.edit-col {
+	background-color: #336699;
+}
+
+.view_data tr td div.wrap {
+	max-height: 100px;
+	height: 100%;
+}
+
+.view_data tr td.view-col div.wrap {
+	overflow: auto;
+}
+
+p.delete-confirm-desc {
+	font-weight: bold;
+	padding-bottom: 7px;
+	text-align: center;
+}
+
+p.datetime a, p.date a, p.time a {
+	color: #FFFFFF;
+}
+
+.view-row-hide, .edit-row-hide {
+	display: none;
+}
+
+a.edit-style-map {
+    color: #FFFFFF;
+    float: right;
+}
+
+tr#edit-row-create td.edit-col {
+    background-color: #CCAA99;
+}
+
+tr#edit-row-create td.id div.wrap {
+    font-size: 2em;
+    color: #992211;
+}
+
+tr.view-row td.type-6 div.wrap {
+    background: url("../images/icon-polygon.png") no-repeat scroll 0 0 transparent;
+    display: block;
+    font-size: 0;
+    height: 60px;
+    width: 60px;
+}
+
+tr.view-row td.type-7 div.wrap {
+    background: url("../images/icon-point.png") no-repeat scroll 0 0 transparent;
+    display: block;
+    font-size: 0;
+    height: 60px;
+    width: 60px;
+}
+
+.edit-map {
+    width: 500px;
+    height: 400px;
+}
+
+.edit-popup {
+    position: fixed;
+    top: 50px;
+    left: 100px;
+    background: url("../images/bt-trans.png") repeat scroll 0 0 transparent;
+    padding: 10px;
+}
+
+.edit-style-popup {
+    margin-top: 5px;
+}
+
+.progress .wrap {
+	background: url("../images/loading.gif") no-repeat 50% 50%;
+	display: block;
+    font-size: 0;
+    height: 16px !important;
+    width: 16px;
+}

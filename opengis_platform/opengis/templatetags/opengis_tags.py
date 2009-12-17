@@ -2,7 +2,7 @@ from django import template
 from django.core.urlresolvers import reverse
 from django.template import Node
 
-
+import opengis
 from opengis.models import *
 
 register = template.Library()
@@ -50,12 +50,18 @@ def my_url(parser, token):
 def print_value(data_row, column_info):
 	
 	if column_info.data_type == sql.TYPE_USER_TABLE:
-		obj = getattr(data_row, column_info.physical_column_name)
-		display_column = UserTable.objects.get(pk=column_info.related_table).display_column
-		return getattr(obj, display_column)
+		try:
+			obj = getattr(data_row, column_info.physical_column_name)
+			display_column = UserTable.objects.get(pk=column_info.related_table).display_column
+			value = str(getattr(obj, display_column)) + ' [id:' + str(getattr(obj, 'id')) + ']'
+		except:
+			value = None
 		
-	else:
-		return getattr(data_row, column_info.physical_column_name)
+	else: 
+		value = getattr(data_row, column_info.physical_column_name)
+	
+	if value: return value
+	else: return ''
 
 @register.simple_tag
 def print_share_level_html(MEDIA_URL, level_number):
@@ -82,7 +88,7 @@ def print_column_data_type(data_type):
 	elif data_type == sql.TYPE_USER_TABLE: return "Table"
 	elif data_type == sql.TYPE_BUILT_IN_TABLE: return "Built-in Table"
 	return "Unknown"
-
+	
 # CREATE TABLE
 @register.simple_tag
 def generate_data_type_list(type_value):
@@ -112,6 +118,23 @@ def generate_user_table_list(user_tables):
 		html += '<option value="' + str(user_table.id) + '">' + user_table.table_name + "</option>"
 	return html
 
-
+@register.simple_tag
+def generate_relate_table(column_info):
+	html = ''
+	if column_info.data_type != sql.TYPE_USER_TABLE:
+		return ''
+		
+	relate_table = UserTable.objects.get(pk=column_info.related_table)
+	display_column = relate_table.display_column
+	relate_table = opengis.create_model(relate_table)
+	
+	html += '<select id="user-table-' + column_info.column_name + '">'
+	html += '<option value="">- none -</option>'
+	for row in relate_table.objects.all():
+		row_id = str(getattr(row, 'id'))
+		row_val = str(getattr(row, display_column))
+		html += '<option value="' + row_val + ' [id:' + row_id + ']">'+ row_val + ' [id:' + row_id + ']</option>'
+	html += '</select>'
+	return html
 	
 		

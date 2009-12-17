@@ -1,6 +1,10 @@
+from datetime import datetime, date, time
+import re
+
 from django.contrib.gis.geos.collections import *
 from django.utils import simplejson
 
+import opengis
 from opengis.models import *
 
 def _two_digit(value):
@@ -67,3 +71,28 @@ def convert_query_result_to_geojson(request, columns, result):
 		features.append('{"type":"Feature"%s,"properties":{%s}}' % (geometry_geojson, ','.join(properties)))
 
 	return '{"type": "FeatureCollection","features":[%s]}' % ','.join(features)
+
+def convert_string_to_data_with_format(column_data, table_column):
+	data = {'value': column_data, 'error': ''}
+	if column_data.strip():
+		data_type = table_column.data_type
+		try:
+			if data_type == sql.TYPE_CHARACTER: data['value'] = str(column_data)
+			elif data_type == sql.TYPE_NUMBER: data['value'] = float(column_data)
+			elif data_type == sql.TYPE_DATETIME: data['value'] = datetime.strptime(column_data, '%Y-%m-%d %H:%M:%S')
+			elif data_type == sql.TYPE_DATE: data['value'] = datetime.strptime(column_data, '%Y-%m-%d').date()
+			elif data_type == sql.TYPE_TIME: data['value'] = datetime.strptime(column_data, '%H:%M:%S').time()
+			elif data_type == sql.TYPE_REGION: data['value'] = GEOSGeometry(column_data)
+			elif data_type == sql.TYPE_LOCATION: data['value'] = GEOSGeometry(column_data)
+			elif data_type == sql.TYPE_USER_TABLE or data_type == sql.TYPE_BUILT_IN_TABLE: 
+				related_user_table = UserTable.objects.get(pk=table_column.related_table)
+				related_model = opengis.create_model(related_user_table)
+				related_model_row_id = re.search(r'\[id\:(\d+)\]', column_data)
+				column_data = related_model_row_id.group(1)
+				data['value'] = related_model.objects.get(pk=column_data)
+		except ValueError as error:
+			data['error'] = table_column.column_name + ': ' + error.message
+	else:
+		data['value'] = None
+
+	return data

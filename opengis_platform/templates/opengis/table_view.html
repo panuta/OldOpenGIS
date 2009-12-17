@@ -2,6 +2,17 @@
 {% load opengis_tags %}
 
 {% block head_content %}
+<link href="/media/css/forms.css" type="text/css" rel="stylesheet"></link>
+
+<script type="text/javascript" src="{{ MEDIA_URL }}/scripts/jquery.template.js" ></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}/scripts/gettext.js" ></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}/scripts/openlayers/OpenLayers.js" ></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}/scripts/opengis.js" ></script>
+
+<script type="text/javascript" src="/media/js/core.js"></script>
+<script type="text/javascript" src="/media/js/calendar.js"></script>
+<script type="text/javascript" src="/media/js/admin/DateTimeShortcuts.js"></script>
+
 <script type="text/javascript">
 $(document).ready(function() {
 	$(".empty-table").click(function() {
@@ -25,6 +36,516 @@ $(document).ready(function() {
 	});
 });
 </script>
+
+<script type="text/javascript">
+    var table_id = {{user_table.id}};
+    
+    opengisPolygon = new opengis('polygon');
+    opengisPoint = new opengis('point');
+
+	/*
+    	TYPE_SERIAL = 9 # Auto-increment number
+    	TYPE_CHARACTER = 1
+    	TYPE_NUMBER = 2
+    	TYPE_DATETIME = 3
+    	TYPE_DATE = 4
+    	TYPE_TIME = 5
+    	TYPE_REGION = 6
+    	TYPE_LOCATION = 7
+    	TYPE_USER_TABLE = 8
+    	TYPE_BUILT_IN_TABLE = 10
+
+    */
+    // =====================
+    // Data type mapping
+    // =====================
+    indexTypes = [
+    {
+        'type': 'hidden',
+        'class': ''
+    },
+    {
+        'type': 'text',
+        'class': 'character'
+    },
+    {
+        'type': 'text',
+        'class': 'number'
+    },
+    {
+        'type': 'text',
+        'class': 'datetime'
+    },
+    {
+        'type': 'text',
+        'class': 'date'
+    },
+    {
+        'type': 'text',
+        'class': 'time'
+    },
+    {
+        'type': 'textarea',
+        'class': 'polygon'
+    },
+    {
+        'type': 'textarea',
+        'class': 'point'
+    },
+    {
+        'type': 'text',
+        'class': 'user_table'
+    },
+    {
+        'type': 'hidden',
+        'class': 'serial'
+    },
+    {
+        'type': 'text',
+        'class': 'built_in_table'
+    }
+    ]
+
+    // ======================
+    // Template
+    // ======================
+    var tem_texta = $.template('<textarea name="${name}" id="edit-${name}-${id}" class="data ${class}" rows="4" style="width: 100%;">${value}</textarea>');
+    var tem_inp = $.template('<input type="${type}" name="${name}" id="edit-${name}-${id}" class="data ${class}" value="${value}"></input>');
+    var tem_sel = $.template('<select name="${name}" id="edit-${name}-${id}" class="data ${class}">${value}</select>');
+
+    $(document).ready(function() {
+        var cols = [];
+        var indexId = 0;
+
+        // Mapping data type and column.
+        $('table.view_data thead th').each(function(i, th) {
+            var val = $(th).html();
+            if (i > 0) {
+                cols.push({
+                    'name': $(th).html(),
+                    'type': $(th).attr('class').replace('type-', '')
+                });
+            }
+            if (val == 'ID') {
+                indexId = i;
+            };
+        });
+
+        // Make sure, has column ID
+        if (!indexId) {};
+        
+        var renderMap = function(type, idText, idMap) {
+            if (type == 'polygon') {
+                opengisPolygon.geoField(idText, idMap);
+            }
+            else if (type == 'point') {
+                opengisPoint.geoField(idText, idMap);
+            }
+        }
+
+        // When user click "Edit" link on the row.
+        // @see Add event when click "Edit"
+        var forEdit = function(row) {
+            
+            $('.edit-row').hide();
+            var form = getEditRow(row);
+            var rid = getIdFromRow(row);
+            fields = getColData(row);
+
+            // =========================
+            // Defind form each fields.
+            // =========================
+            $.each(fields,
+            function(i, field) {
+                if (field.mapper['type'] == 'textarea') {
+                    var input = $(tem_texta.apply({
+                        'id': rid + '-' + i,
+                        'name': field['name'],
+                        'class': field.mapper['class'] + ' vWKTField',
+                        'value': field['val']
+                    }));
+                }
+                else if (field.mapper['class'] == 'datetime') {
+                    var input = $('<p class="datetime"></p>');
+                    input.append($(tem_inp.apply({
+                        'id': rid + '-' + i,
+                        'type': field.mapper['type'],
+                        'name': field['name'],
+                        'class': 'vDateField',
+                        'value': field['val'].split(' ')[0]
+                    })));
+                    input.append('<br></br>');
+                    input.append($(tem_inp.apply({
+                        'id': rid + '-' + i,
+                        'type': field.mapper['type'],
+                        'name': field['name'],
+                        'class': 'vTimeField',
+                        'value': field['val'].split(' ')[1]
+                    })));
+                }
+                else if (field.mapper['class'] == 'date') {
+                    var input = $('<p class="date"></p>');
+                    input.append($(tem_inp.apply({
+                        'id': rid + '-' + i,
+                        'type': field.mapper['type'],
+                        'name': field['name'],
+                        'class': 'vDateField',
+                        'value': field['val']
+                    })));
+                }
+                else if (field.mapper['class'] == 'time') {
+                    var input = $('<p class="time"></p>');
+                    input.append($(tem_inp.apply({
+                        'id': rid + '-' + i,
+                        'type': field.mapper['type'],
+                        'name': field['name'],
+                        'class': 'vTimeField',
+                        'value': field['val']
+                    })));
+                }
+                else if (field.mapper['class'] == 'user_table') {
+                    var input = $(tem_sel.apply({
+                        'id': rid + '-' + i,
+                        'name': field['name'],
+                        'class': field.mapper['class'],
+                        'value': $('#user-table-' + field['name']).html()
+                    }));
+                    input.val(field['val']);
+                }
+                else {
+                    var input = $(tem_inp.apply({
+                        'id': rid + '-' + i,
+                        'type': field.mapper['type'],
+                        'name': field['name'],
+                        'class': field.mapper['class'],
+                        'value': field['val']
+                    }));
+                }
+
+                // For geometries column
+                var otherStyle = '';
+                if (field.mapper['class'] == 'polygon' || field.mapper['class'] == 'point') {
+                    undoText = '';
+                    otherStyle = $('<a href="#" class="edit-style-map">map style</a>').click(function(e) {
+                        e.preventDefault();
+                        undoText = $(this).siblings('.vWKTField').val();
+                        
+                        idText = '';
+                        idMap = '';
+
+                        $(this).parent().parent().parent().children().children().css('max-height', 300);
+                        
+                        $('.edit-popup').remove();
+                        $(this).parent().append(
+                            $('<div class="edit-popup"></div>').css(
+                                'top', ($(window).height() - 400)/2).css(
+                                'left', ($(window).width() - 500)/2).append(
+                                $('<div id="geo-' + rid + '-' + i + '" class="edit-map" style="min-width:300px;">Loading ...</div>')).append(
+                                $('<input type="submit" class="edit-style-popup" value="Submit"></input>').click(function (e) {
+                                    e.preventDefault();
+                                    $(this).parent().hide();
+                                })).append(
+                                $('<input type="submit" class="edit-style-popup" value="Cancel"></input>').click(function (e) {
+                                    e.preventDefault();
+                                    $('#' + idText).val(undoText);
+                                    $('#' + idMap).html('');
+                                    renderMap(field.mapper['class'], idText, idMap);
+                                    $(this).parent().hide();
+                                }))
+                        );
+                        
+                        idText = $(this).siblings('.vWKTField').attr('id');
+                        idMap = $(this).siblings('.edit-popup').children('.edit-map').attr('id');
+                        $('#' + idMap).html('');
+
+                        renderMap(field.mapper['class'], idText, idMap);
+
+                        $(this).siblings('.edit-popup').show();
+                    });
+                }
+
+                if (i + 1 != indexId) {
+                    $(form.children().get(i + 1)).html('').append($('<div class="wrap"></div>').append(input).append(otherStyle));
+                }
+
+            });
+
+            // ================================
+            // 4 Submit: Edit, Reset, Delete, Delete not confirm.
+            // ================================
+            // Edit data all column of row (no confirm).
+            var edit = $('<input type="submit" name="edit" id="edit-edit" value="Save" class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+
+                // Ajax update.
+                // Validate date from backend and alert to use.
+                // If validated and this event is create row, backend return the new id(newId) of row.
+
+                
+                var dataToSave = prepareDataRow(row, fields);
+                request = {'table_id': table_id, 'row[]': dataToSave }
+                if (rid == 'create') { request['op'] = 'create'; }
+                else { request['row_id'] = rid; request['op'] = 'update'; }
+                
+                progressStart(rid);
+                $.post('{% url opengis_api_table_save_row %}', request, function(data) {
+        			
+        			if (data['response'] == 'error') {
+        			    alert(data['result']);
+        			}
+        			else if (data['response'] == 'success') {
+        			    // Update display row.
+                        updateRow(row, data['result']);
+        			}
+        			progressEnd(rid);
+        		}, "json");
+
+                
+
+            });
+
+            // Reset data all column of row.
+            var reset = $('<input type="submit" name="reset" id="edit-reset" value="Reset" class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+                forEdit(row);
+            });
+
+            // Delete row (need confirm)
+            // @see forDelete()
+            var del = $('<input type="submit" name="delete" id="edit-delete" value="Delete" class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+                forDelete(row);
+            });
+            var cancel = $('<input type="submit" name="cancel" id="edit-cancel" value="Cancel" class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+                form.hide();
+                row.parent().show();
+            });
+            
+            var delNotConfirm = $('<input type="submit" name="cancel" id="edit-delete-not-confirm" value="Cancel" class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+                forDeleteNotConfirm(row);
+            });
+
+            // Append 3 submit bottons to hidden row.
+            if (getIdFromRow(row) == 'create') {
+                $(form.children().get(0)).html('').append($('<div class="wrap"></div>').append($('<p></p>').append(edit)).append($('<p></p>').append(delNotConfirm)));
+            }
+            else {
+                $(form.children().get(0)).html('').append($('<div class="wrap"></div>').append($('<p></p>').append(edit)).append($('<p></p>').append(reset)).append($('<p></p>').append(del)).append($('<p></p>').append(cancel)));
+            }
+
+            $('.view-row').show();
+
+            // Replace view row with edit row.
+            row.parent().hide();
+            form.show();
+            //form.children('.id').height(form.children('td').innerHeight());
+
+            // Add js of Django datetime, date, time fields.
+            DateTimeShortcuts.init();
+
+        }
+
+        // Confirm delete form.
+        var forDelete = function(row) {
+            var form = getEditRow(row);
+
+            // ================================
+            // 2 Submit: Delete, Cancel.
+            // ================================
+            // Delete data all column of row (no confirm).
+            var del = $('<input type="submit" name="delete" id="delete-delete" value="Delete"  class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+
+                // Ajax delete this row.
+                var row_id = getIdFromRow(row);
+                request = {'table_id': table_id, 'row_id': row_id, 'op': 'delete' };
+                progressStart(row_id)
+                $.post('{% url opengis_api_table_save_row %}', request, function(data) {
+        			
+        			if (data['response'] == 'error') {
+        			    alert(data['result']);
+        			}
+        			else if (data['response'] == 'success') {
+        			    // Update display row.
+                        forDeleteNotConfirm(row);
+        			}
+        			progressEnd(row_id)
+        		}, "json");
+                
+            });
+
+            // Back to edit form
+            // @see forEdit()
+            var cancel = $('<input type="submit" name="cancel" id="delete-cancel" value="Cancel"  class="popup-submit"></input>').click(function(e) {
+                e.preventDefault();
+                forEdit(row);
+            });
+
+            $(form.children().get(0)).html('').append($('<div class="wrap"></div>').append($('<p class="delete-confirm-desc"></p>').html('Confirm!')).append(del).append(cancel));
+        }
+        
+        // Delete without confirm.
+        var forDeleteNotConfirm = function(row) {
+            var form = getEditRow(row);
+            row.parent().remove();
+            form.remove();
+            hasRow();
+        }
+
+        // ====================
+        // Support functions
+        // ====================
+        // Prepare data of row from html table.
+        var getColData = function(row) {
+            rowData = [];
+            $.each(row,
+            function(i, td) {
+                if (i > 0) {
+                    rowData.push({
+                        'val': $(td).children('div').html(),
+                        'name': cols[i - 1]['name'],
+                        'mapper': indexTypes[cols[i - 1]['type']]
+                    });
+                }
+            });
+            return rowData;
+        }
+
+        // Get id of row for send ajax to update this row.
+        var getIdFromRow = function(row) {
+            return $(row[indexId]).children().html();
+        }
+
+        // Get hidden form for edit row.
+        var getEditRow = function(row) {
+            return $('#edit-row-' + getIdFromRow(row));;
+        }
+        
+        // Check if no data.
+        var hasRow = function() {
+            if ($('.view_data tbody tr:visible').get(0)) {
+                $('.no_table_data').hide();
+            }
+            else {
+                $('.no_table_data').show();
+            }
+        }
+        
+        // Check for user creating.
+        var isWaitForCreate = function() {
+            if ($('#edit-row-create').get(0)) {
+                $('#view-row-create, #edit-row-create').remove();
+            }
+        }
+        
+        var progressStart = function(row_id) {
+            $('#edit-row-' + row_id + ' td.id').addClass('progress');
+        }
+        
+        var progressEnd = function(row_id) {
+            $('#edit-row-' + row_id + ' td.id').removeClass('progress');
+        }
+        
+        var prepareDataRow = function(row, fields) {
+            var formFields = getEditRow(row).children();
+            var data = [];
+            
+            $.each(formFields,
+            function(i, field) {
+                // Skip first an secound field.
+                if (i > 1) {
+                    var arrData = [];
+                    $(field).find('input.data, textarea.data, select.data').each(function(j, inp) {
+                        arrData.push($(inp).val());
+                    })
+                    data.push(fields[i-1]['name'] + '=' + arrData.join(' '));
+                }
+            });
+            
+            return data;
+        }
+        
+        
+        // Get hidden form for edit row.
+        var updateRow = function(row, newId) {
+            var formFields = getEditRow(row).children();
+            $.each(row,
+            function(i, field) {
+                // Skip first an secound field.
+                if (i > 1) {
+                    var arrData = [];
+                    $(formFields.get(i)).find('input.data, textarea.data, select.data').each(function(j, inp) {
+                        arrData.push($(inp).val());
+                    })
+
+                    $(field).html('').append($('<div class="wrap"></div>').append(arrData.join(' ')));
+                }
+            });
+
+            if (newId) {
+                $(row.get(indexId)).html('<div class="wrap">' + newId + '</div>');
+                $(formFields.get(indexId)).html('<div class="wrap">' + newId + '</div>');
+                row.parent().attr('id', 'view-row-' + newId);
+                formFields.parent().attr('id', 'edit-row-' + newId);
+
+                $(row.get(0)).find('a').click(function(e) {
+                    e.preventDefault();
+
+                    //Display popup for edit.
+                    forEdit(row);
+                    isWaitForCreate();
+                });
+            };
+
+            formFields.parent().hide();
+            row.parent().show();
+            hasRow();
+        }
+
+        // ====================
+        // User create row.
+        // ====================
+        $('.input-data').click(function(e) {
+            e.preventDefault();
+            $('.edit-row').hide();
+            $('.view-row').show();
+            
+            var thFirst = $('.view_data thead tr th:first');
+            if (thFirst.css('display') == 'none') { thFirst.show(); };
+
+            var newRowEdit = $('#edit-row-0').clone();
+            newRowEdit.attr('id', 'edit-row-create').attr('class', 'edit-row');
+
+            var newRowView = $('#view-row-0').clone();
+            newRowView.attr('id', 'view-row-create').attr('class', 'view-row');
+
+            $('.view_data tbody').prepend(newRowEdit);
+            $('.view_data tbody').prepend(newRowView);
+
+            newRowEdit.show();
+
+            // Display popup for edit.
+            forEdit(newRowView.children());
+
+        });
+
+        // ====================
+        // User edit row.
+        // ====================
+        $('table.view_data tbody tr td a').click(function(e) {
+            e.preventDefault();
+            var row = $(this).parent().parent().parent().children();
+            isWaitForCreate();
+            //Display popup for edit.
+            forEdit(row);
+
+        });
+
+    });
+</script>
+
 {% endblock %}
 
 {% block sub_body_content %}
@@ -32,7 +553,7 @@ $(document).ready(function() {
 <div class="page_nav">
 	<ul>
 		<li><a href="{% url opengis_import_my_table user_table.table_name %}">Import Data</a></li>
-		<li><a href="#">Input Data</a></li>
+		<li><a class="input-data" href="#">Input Data</a></li>
 		<li>|</li>
 		<li><a href="{% url opengis_edit_my_table user_table.table_name %}">Edit Table</a></li>
 		<li>|</li>
@@ -52,28 +573,58 @@ $(document).ready(function() {
 		<div>{{user_table.description|default:'<span>[ No description ]</span>'}}</div>
 	</div>
 	<div class="right_panel">
+	    <div id="hidden-input" style="display:none; ">
+	        {% for column in user_table.columns %}
+	            {% generate_relate_table column %}
+	        {% endfor %}
+	    </div>
 		<table class="view_data">
-			<thead>
-				<tr>
-					{% if table_data %}<th></th>{% endif %}
-					<th>ID</th>
-					{% for column in user_table.columns %}
-					<th>{{column.column_name}}</th>
-					{% endfor %}
-				</tr>
-			</thead>
-			<tbody>
-				{% for data_row in table_data %}
-					<tr>
-						<td><a href="#">Edit</a></td>
-						<td>{{data_row.id}}</td>
-						{% for column in user_table.columns %}
-						<td>{% print_value data_row column %}</td>
-						{% endfor %}
-					</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+    		<thead>
+    			<tr>
+    				<th{% if not table_data %} style="display: none;"{% endif %}></th>
+    				<th class="type-9">ID</th>
+    			{% for column in user_table.columns %}
+    				<th class="type-{{column.data_type}}">{{column.column_name}}</th>
+    			{% endfor %}
+    			</tr>
+    		</thead>
+    		<tbody>
+    			{% for data_row in table_data %}
+    				<tr id="view-row-{{data_row.id}}" class="view-row">
+    					<td class="first"><div class="wrap"><a href="#">Edit</a></div></td>
+    					<td><div class="wrap">{{data_row.id}}</div></td>
+    				{% for column in user_table.columns %}
+    					<td class="view-col type-{{column.data_type}}"><div class="wrap">{% print_value data_row column %}</div></td>
+    				{% endfor %}
+    				</tr>
+
+    				<tr id="edit-row-{{data_row.id}}" class="edit-row">
+    					<td  class="first"></td>
+    					<td id="edit-col-{{data_row.id}}" class="id"><div class="wrap">{{data_row.id}}</div></td>
+    				{% for column in user_table.columns %}
+    					<td class="edit-col"></td>
+    				{% endfor %}
+    				</tr>
+
+    			{% endfor %}
+
+    			<tr id="view-row-0" class="view-row-hide">
+    				<td class="first"><div class="wrap"><a href="#">Edit</a></div></td>
+    				<td><div class="wrap">create</div></td>
+    			{% for column in user_table.columns %}
+    				<td class="view-col type-{{column.data_type}}"><div class="wrap"></div></td>
+    			{% endfor %}
+    			</tr>
+
+    			<tr id="edit-row-0" class="edit-row-hide">
+    				<td  class="first"></td>
+    				<td class="id"><div class="wrap">*</div></td>
+    			{% for column in user_table.columns %}
+    				<td class="edit-col"></td>
+    			{% endfor %}
+    			</tr>
+    		</tbody>
+    	</table>
 		{% if not table_data %}
 			<div class="no_table_data">No data in table</div>
 		{% endif %}

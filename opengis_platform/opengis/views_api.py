@@ -256,6 +256,65 @@ def api_table_delete_columns(request):
 		
 	else:
 		return api.APIResponse(api.API_RESPONSE_POSTONLY)
+		
+def api_table_save_row(request):
+	# TODO: Check permissions.
+	if request.method == 'POST':
+		account = Account.objects.get(user=request.user)
+
+		table_id = int(request.POST.get('table_id'))
+		row = request.POST.getlist('row[]')
+		row_id = int(request.POST.get('row_id', 0))
+		op = request.POST.get('op')
+		
+		if not table_id: return api.APIResponse(api.API_RESPONSE_ERROR, response_meta={'error':'required_table_id'})
+		
+		user_table = UserTable.objects.filter(account=account, pk=table_id);
+		if not user_table.count():
+			return api.APIResponse(api.API_RESPONSE_ERROR, response_meta={'error':'missing_table_id'})
+		
+		user_table = user_table[0]
+		table_columns = UserTableColumn.objects.filter(table=user_table)
+		target_model = opengis.create_model(user_table)
+		
+		if row_id:
+			model_obj = target_model.objects.get(pk=row_id)
+		else:
+			model_obj = target_model()
+		
+		print model_obj.id
+		if op == 'delete': 
+			model_obj.delete()
+			return api.APIResponse(api.API_RESPONSE_SUCCESS)
+		
+		error = []
+		for index, column in enumerate(row):
+			column_name, column_data = column.split('=')
+			table_column = utilities.list_find(lambda table_column: table_column.column_name == column_name, table_columns)
+			physical_column_name = table_column.physical_column_name
+			print column_data
+			
+			column_data = utilities.convert_string_to_data_with_format(column_data, table_column)
+			if not column_data['error']:
+				setattr(model_obj, physical_column_name, column_data['value'])
+			else:
+				error += [str(index + 1) + '. ' + column_data['error']]
+				
+		if not len(error):
+			model_obj.save()
+			return api.APIResponse(api.API_RESPONSE_SUCCESS, result=model_obj.id)
+		else:
+			return api.APIResponse(api.API_RESPONSE_ERROR, result='\n'.join(error))
+	else:
+		return api.APIResponse(api.API_RESPONSE_POSTONLY)
+		
+def api_table_edit_rows(request):
+	# TODO: Check permissions.
+	pass
+	
+def api_table_delete_rows(request):
+	# TODO: Check permissions.
+	pass
 
 def api_table_empty(request):
 	if request.method == 'POST':

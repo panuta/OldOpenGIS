@@ -78,7 +78,7 @@ function do_update_table(table_name, table_description, table_tags, share_level,
 			</ol>
 		</div>
 		<ul class="form display_column_panel">
-			<li><label for="id_display_column_selector">Display Column:</label><select id="id_display_column_selector">{% for column in user_table.columns %}<option {% ifequal column.physical_column_name user_table.display_column %}selected="selected"{% endifequal %}>{{column.column_name}}</option>{% endfor %}</select><div class="comment">* Value from which column that will be used in a list when editing</div></li>
+			<li><label for="id_display_column_selector">Display Column:</label><select id="id_display_column_selector">{% for column in user_table.columns %}<option value="{{column.physical_column_name}}" {% ifequal column.physical_column_name user_table.display_column %}selected="selected"{% endifequal %}>{{column.column_name}}</option>{% endfor %}</select><div class="comment">* Value from which column that will be used in a list when editing</div></li>
 		</ul>
 		<div class="button_panel">
 			<button type="submit">Update Table</button>
